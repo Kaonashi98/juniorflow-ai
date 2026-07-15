@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f8f3;
+  --foreground: #14261f;
+  --ink: #14261f;
+  --muted: #64736d;
+  --line: #dce2dc;
+  --lime: #c8f169;
+  --lime-dark: #a7d443;
+  --surface: #ffffff;
+  --surface-soft: #eef1e9;
 }
 
 @theme inline {
@@ -12,15 +19,43 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  outline-color: #7daa27;
+}
+
+::selection {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.dot-grid {
+  background-image: radial-gradient(#ccd5cb 0.8px, transparent 0.8px);
+  background-size: 18px 18px;
+}
+
+.ticket-paper {
+  background-image: linear-gradient(to bottom, transparent 31px, #edf0eb 32px);
+  background-size: 100% 32px;
 }
