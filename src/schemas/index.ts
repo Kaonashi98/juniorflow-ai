@@ -240,6 +240,7 @@ export const reviewInputSchema = z
     sessionId: z.string().uuid(),
     submissionRevision: z.number().int().min(0).max(10_000),
     ticket: generatedTicketSchema,
+    language: ticketLanguageSchema,
     submissionType: submissionTypeSchema,
     approach: ticketSubmissionSchema.shape.approach,
     code: ticketSubmissionSchema.shape.code,

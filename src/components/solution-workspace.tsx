@@ -29,9 +29,12 @@ import type {
   SeniorReview,
   TicketSubmission,
   WorkTicket,
+  TicketLanguage,
 } from "@/types";
 import { SeniorReviewCard } from "@/components/senior-review-card";
 import { useAccess, useLanguage } from "@/components/app-providers";
+import { UI_COPY, localizedApiError } from "@/lib/ui-copy";
+import { formatSubmissionType } from "@/lib/presentation";
 
 const reviewResponseSchema = z.object({ review: seniorReviewSchema });
 
@@ -40,6 +43,7 @@ export function createReviewRequest(
   submission: TicketSubmission,
   sessionId: string,
   submissionRevision: number,
+  language: TicketLanguage = "English",
 ): ReviewInput {
   const { createdAt: _createdAt, isDemo: _isDemo, ...generatedTicket } = ticket;
   void _createdAt;
@@ -48,6 +52,7 @@ export function createReviewRequest(
     sessionId,
     submissionRevision,
     ticket: generatedTicket,
+    language,
     ...submission,
   });
 }
@@ -73,6 +78,7 @@ export function SolutionWorkspace({
   sessionId,
   submissionRevision,
   ticket,
+  ticketLanguage,
   initialSubmission,
   initialReview,
   onSubmission,
@@ -82,6 +88,7 @@ export function SolutionWorkspace({
   sessionId: string;
   submissionRevision: number;
   ticket: WorkTicket;
+  ticketLanguage?: TicketLanguage;
   initialSubmission?: TicketSubmission;
   initialReview?: SeniorReview;
   onSubmission?: (submission: TicketSubmission) => void;
@@ -90,29 +97,8 @@ export function SolutionWorkspace({
 }) {
   const { unlocked, openUnlock } = useAccess();
   const { t, locale } = useLanguage();
-  const solutionCopy = locale === "it"
-    ? {
-        approach: "Il tuo approccio",
-        approachHelp: "Descrivi il ragionamento, i passaggi e le scelte che useresti per risolvere il ticket.",
-        type: "Tipo di consegna",
-        planHelp: "Pseudocodice / piano tecnico: un piano chiaro che non deve compilare. Codice funzionante: implementazione concreta valutata più severamente.",
-        code: "Codice o pseudocodice",
-        difficult: "Cosa è stato difficile?",
-        difficultHelp: "Indica dubbi, ostacoli e punti su cui non eri sicuro.",
-        question: "Domanda per il senior",
-        questionHelp: "Fai una domanda tecnica specifica su cui vuoi ricevere aiuto.",
-      }
-    : {
-        approach: "Your approach",
-        approachHelp: "Describe the reasoning, steps, and choices you would use to solve the ticket.",
-        type: "Submission type",
-        planHelp: "Pseudocode / technical plan is a clear plan that does not need to compile. Working code is concrete code reviewed more strictly.",
-        code: "Code or pseudocode",
-        difficult: "What was difficult?",
-        difficultHelp: "Describe the doubts, blockers, or decisions you were unsure about.",
-        question: "Question for your senior",
-        questionHelp: "Ask one specific technical question where you want guidance.",
-      };
+  const solutionCopy = UI_COPY[locale].solution;
+  const commonCopy = UI_COPY[locale].common;
   const initialSubmissionType =
     initialSubmission?.submissionType ?? "Pseudocode / technical plan";
   const [submissionType, setSubmissionType] =
@@ -172,7 +158,7 @@ export function SolutionWorkspace({
 
     if (review) {
       setError(new ClientApiError(
-        "This submission already has a completed review. Choose Edit submission before requesting another review.",
+        solutionCopy.duplicate,
         "DUPLICATE_REVIEW",
         false,
       ));
@@ -183,14 +169,14 @@ export function SolutionWorkspace({
       submissionFromForm(event.currentTarget),
     );
     if (!parsed.success) {
-      setError(new ClientApiError(parsed.error.issues[0]?.message ?? "Check your submission.", "INVALID_INPUT", false));
+      setError(new ClientApiError(parsed.error.issues[0]?.message ?? solutionCopy.invalid, "INVALID_INPUT", false));
       setIsSubmissionValid(false);
       return;
     }
 
     if (!hasSubmissionChanged) {
       setError(new ClientApiError(
-        "Change the submission before requesting a new review.",
+        solutionCopy.changed,
         "INVALID_INPUT",
         false,
       ));
@@ -208,6 +194,7 @@ export function SolutionWorkspace({
         parsed.data,
         sessionId,
         submissionRevision,
+        ticketLanguage,
       );
       const result = await postJson(
         "/api/reviews",
@@ -257,12 +244,12 @@ export function SolutionWorkspace({
     <div className="min-w-0 space-y-6">
       <form ref={formRef} onSubmit={submit} className="border border-[#d5ddd6] bg-white">
         <header className="border-b border-[#e1e6e1] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">Your solution</p>
-          <h2 className="mt-2 text-2xl font-semibold">Walk your senior through it.</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">{solutionCopy.eyebrow}</p>
+          <h2 className="mt-2 text-2xl font-semibold">{solutionCopy.title}</h2>
           <p className="mt-2 leading-6 text-[#64736d]">
             {hasReview
-              ? "This reviewed submission is locked until you choose to edit it."
-              : "The reasoning matters as much as the final code."}
+              ? solutionCopy.locked
+              : solutionCopy.intro}
           </p>
         </header>
         <div className="space-y-6 p-6">
@@ -277,7 +264,7 @@ export function SolutionWorkspace({
               className={inputClass}
               defaultValue={initialSubmission?.approach}
               onChange={(event) => markSubmissionChanged(event.currentTarget.form)}
-              placeholder="Explain how you would investigate and solve the ticket…"
+              placeholder={solutionCopy.approachPlaceholder}
             />
           </label>
 
@@ -306,7 +293,7 @@ export function SolutionWorkspace({
                     }}
                     className="mr-2 accent-[#678616]"
                   />
-                  {option}
+                  {formatSubmissionType(option, locale)}
                 </label>
               ))}
             </div>
@@ -327,7 +314,7 @@ export function SolutionWorkspace({
               className={inputClass + " font-mono text-[13px]"}
               defaultValue={initialSubmission?.code}
               onChange={(event) => markSubmissionChanged(event.currentTarget.form)}
-              placeholder="// Paste code or write clear pseudocode here"
+              placeholder={solutionCopy.codePlaceholder}
             />
           </label>
           <label className="block text-sm font-semibold">{solutionCopy.difficult}<span className="mt-1 block font-normal leading-5 text-[#66736d]">{solutionCopy.difficultHelp}</span>
@@ -339,7 +326,7 @@ export function SolutionWorkspace({
               className={inputClass}
               defaultValue={initialSubmission?.difficulties}
               onChange={(event) => markSubmissionChanged(event.currentTarget.form)}
-              placeholder="Tell your senior where you felt unsure…"
+              placeholder={solutionCopy.difficultPlaceholder}
             />
           </label>
           <label className="block text-sm font-semibold"><span className="flex items-center gap-2"><MessageCircleQuestion aria-hidden="true" size={17} className="text-[#5e7a17]" />{solutionCopy.question}</span><span className="mt-1 block font-normal leading-5 text-[#66736d]">{solutionCopy.questionHelp}</span>
@@ -351,17 +338,17 @@ export function SolutionWorkspace({
               className={inputClass}
               defaultValue={initialSubmission?.seniorQuestion}
               onChange={(event) => markSubmissionChanged(event.currentTarget.form)}
-              placeholder="What would you like clarified?"
+              placeholder={solutionCopy.questionPlaceholder}
             />
           </label>
 
           {error && (
             <div role="alert" className="border border-[#e5c8bc] bg-[#fff7f3] p-4 text-sm text-[#8f3f2d]">
-              <p className="font-semibold">Review unavailable</p>
-              <p className="mt-1 leading-6">{error.message}</p>
+              <p className="font-semibold">{solutionCopy.unavailable}</p>
+              <p className="mt-1 leading-6">{localizedApiError(error.code, locale)}</p>
               <div className="mt-3 flex flex-wrap gap-4">
-                {error.retryable && <button type="button" onClick={retry} className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4"><RotateCcw aria-hidden="true" size={15} />Retry</button>}
-                <Link href="/demo" className="font-semibold underline underline-offset-4">Open sample demo</Link>
+                {error.retryable && <button type="button" onClick={retry} className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4"><RotateCcw aria-hidden="true" size={15} />{commonCopy.retry}</button>}
+                <Link href="/demo" className="font-semibold underline underline-offset-4">{commonCopy.demo}</Link>
               </div>
             </div>
           )}
@@ -369,19 +356,19 @@ export function SolutionWorkspace({
           {hasReview ? (
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
               <button type="button" disabled className="inline-flex min-h-12 items-center justify-center gap-2 bg-[#eef1e9] px-5 font-semibold text-[#52615b]">
-                <Check aria-hidden="true" size={18} />Review completed
+                <Check aria-hidden="true" size={18} />{solutionCopy.complete}
               </button>
               <button
                 type="button"
                 onClick={() => setIsEditDialogOpen(true)}
                 className="inline-flex min-h-12 items-center justify-center gap-2 border border-[#14261f] px-5 font-semibold text-[#14261f] transition-colors hover:bg-[#f4f6f1] focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-offset-2"
               >
-                <Pencil aria-hidden="true" size={17} />Edit submission
+                <Pencil aria-hidden="true" size={17} />{solutionCopy.edit}
               </button>
             </div>
           ) : (
             <button type="submit" disabled={!requestEnabled} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-5 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
-              {isReviewing ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />GPT-5.6 is reviewing…</> : <>Request senior review <ArrowRight aria-hidden="true" size={18} /></>}
+              {isReviewing ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />{solutionCopy.reviewing}</> : <>{solutionCopy.request} <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
           )}
         </div>
@@ -412,6 +399,8 @@ export function EditSubmissionDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const { locale } = useLanguage();
+  const copy = UI_COPY[locale];
   const cancelRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -467,10 +456,10 @@ export function EditSubmissionDialog({
           <TriangleAlert aria-hidden="true" size={20} />
         </span>
         <h2 id="edit-submission-title" className="mt-4 text-xl font-semibold">
-          Edit this submission?
+          {copy.solution.editTitle}
         </h2>
         <p id="edit-submission-description" className="mt-2 leading-7 text-[#64736d]">
-          Editing will remove the current senior review. Your ticket, profile, and submitted text will be kept.
+          {copy.solution.editDescription}
         </p>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
@@ -479,14 +468,14 @@ export function EditSubmissionDialog({
             onClick={onCancel}
             className="min-h-11 border border-[#cbd4cc] px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-offset-2"
           >
-            Cancel
+            {copy.common.cancel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="min-h-11 bg-[#14261f] px-4 font-semibold text-white focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-offset-2"
           >
-            Remove review and edit
+            {copy.solution.remove}
           </button>
         </div>
       </div>

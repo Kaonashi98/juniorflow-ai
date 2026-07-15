@@ -57,6 +57,7 @@ describe("POST /api/tickets access and BotID protection", () => {
     const response = await POST(request(createAccessToken(SECRET)));
     expect(response.status).toBe(200);
     expect(mockGenerateTicket).toHaveBeenCalledTimes(1);
+    expect(mockGenerateTicket).toHaveBeenCalledWith(expect.objectContaining({ language: "English" }));
   });
 
   it("rejects a bot before access validation and never calls OpenAI", async () => {

@@ -18,17 +18,12 @@ import {
 } from "lucide-react";
 import type { SeniorReview, TicketSubmission } from "@/types";
 import { useLanguage } from "@/components/app-providers";
+import { UI_COPY } from "@/lib/ui-copy";
+import { formatSubmissionType } from "@/lib/presentation";
 
-const REVIEW_TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "strengths", label: "Strengths & priorities" },
-  { id: "technical", label: "Technical review" },
-  { id: "acceptance", label: "Acceptance criteria" },
-  { id: "learning", label: "Learning plan" },
-] as const;
+const REVIEW_TABS = ["overview", "strengths", "technical", "acceptance", "learning"] as const;
 
-type ReviewTabId = (typeof REVIEW_TABS)[number]["id"];
-const ITALIAN_TAB_LABELS: Record<ReviewTabId, string> = { overview: "Panoramica", strengths: "Punti forti e priorità", technical: "Revisione tecnica", acceptance: "Criteri di accettazione", learning: "Piano di apprendimento" };
+type ReviewTabId = (typeof REVIEW_TABS)[number];
 
 export function SeniorReviewCard({
   review,
@@ -40,7 +35,7 @@ export function SeniorReviewCard({
   demo?: boolean;
 }) {
   const { locale } = useLanguage();
-  const italian = locale === "it";
+  const copy = UI_COPY[locale].review;
   const [activeTab, setActiveTab] = useState<ReviewTabId>("overview");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const instanceId = useId();
@@ -48,7 +43,7 @@ export function SeniorReviewCard({
   function selectTab(index: number) {
     const tab = REVIEW_TABS[index];
     if (!tab) return;
-    setActiveTab(tab.id);
+    setActiveTab(tab);
     tabRefs.current[index]?.focus();
   }
 
@@ -78,9 +73,9 @@ export function SeniorReviewCard({
       <header className="flex items-start justify-between gap-4 border-b border-[#dfe5df] p-5 sm:gap-6 sm:p-6">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">
-            {italian ? "Review del senior" : "Senior review"}{demo ? (italian ? " · Esempio / Modalità demo" : " · Sample / Demo mode") : " · GPT-5.6"}
+            {copy.eyebrow}{demo ? copy.demo : " · GPT-5.6"}
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">{italian ? "La tua review è pronta." : "Your review is ready."}</h2>
+          <h2 className="mt-2 text-2xl font-semibold">{copy.ready}</h2>
         </div>
         <div className="flex size-20 shrink-0 flex-col items-center justify-center bg-[#14261f] text-white">
           <span className="text-2xl font-bold">{review.overallScore}</span>
@@ -90,16 +85,16 @@ export function SeniorReviewCard({
 
       <div
         role="tablist"
-        aria-label={italian ? "Sezioni della review del senior" : "Senior review sections"}
+        aria-label={copy.aria}
         className="flex overflow-x-auto border-b border-[#dfe5df] bg-[#f7f9f4] px-1 sm:grid sm:grid-cols-5 sm:overflow-x-visible sm:px-2"
       >
         {REVIEW_TABS.map((tab, index) => {
-          const selected = activeTab === tab.id;
-          const tabId = instanceId + "-review-tab-" + tab.id;
-          const panelId = instanceId + "-review-panel-" + tab.id;
+          const selected = activeTab === tab;
+          const tabId = instanceId + "-review-tab-" + tab;
+          const panelId = instanceId + "-review-panel-" + tab;
           return (
             <button
-              key={tab.id}
+              key={tab}
               ref={(element) => {
                 tabRefs.current[index] = element;
               }}
@@ -109,7 +104,7 @@ export function SeniorReviewCard({
               aria-selected={selected}
               aria-controls={panelId}
               tabIndex={selected ? 0 : -1}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab)}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
               className={
                 "min-h-12 shrink-0 border-b-2 px-2 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-inset sm:min-w-0 sm:px-1 " +
@@ -118,7 +113,7 @@ export function SeniorReviewCard({
                   : "border-transparent text-[#64736d] hover:text-[#14261f]")
               }
             >
-              {italian ? ITALIAN_TAB_LABELS[tab.id] : tab.label}
+              {copy.tabs[tab]}
             </button>
           );
         })}
@@ -128,14 +123,14 @@ export function SeniorReviewCard({
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-3">
             <span className="bg-[#eef1e9] px-2.5 py-1 text-xs font-semibold text-[#52615b]">
-              {submissionType}
+              {formatSubmissionType(submissionType, locale)}
             </span>
             <span className="text-sm font-semibold text-[#52615b]">
-              {italian ? "Punteggio complessivo" : "Overall score"}: {review.overallScore}/100
+              {copy.score}: {review.overallScore}/100
             </span>
           </div>
           <section>
-            <h3 className="font-semibold text-[#52615b]">{italian ? "Sintesi della review" : "Review summary"}</h3>
+            <h3 className="font-semibold text-[#52615b]">{copy.summary}</h3>
             <p className="mt-3 whitespace-pre-wrap leading-7 text-[#52615b]">
               {review.approachAssessment}
             </p>
@@ -146,15 +141,15 @@ export function SeniorReviewCard({
       <ReviewPanel instanceId={instanceId} id="strengths" activeTab={activeTab}>
         <div className="grid gap-4 md:grid-cols-2">
           <HighlightList
-            title={italian ? "Punti di forza principali" : "Top strengths"}
+            title={copy.strengths}
             items={review.strengths}
-            empty="No specific strengths were identified."
+            empty={copy.emptyStrengths}
             tone="good"
           />
           <HighlightList
-            title={italian ? "Priorità di miglioramento" : "Improvement priorities"}
+            title={copy.improvements}
             items={review.improvements}
-            empty="No immediate improvements were identified."
+            empty={copy.emptyImprovements}
             tone="warn"
           />
         </div>
@@ -162,33 +157,33 @@ export function SeniorReviewCard({
 
       <ReviewPanel instanceId={instanceId} id="technical" activeTab={activeTab}>
         <div className="grid gap-7 md:grid-cols-2">
-          <ReviewList icon={Bug} title={italian ? "Problemi" : "Problems"} items={review.problems} tone="warn" empty="No material problems identified." />
-          <ReviewList icon={Target} title={italian ? "Bug possibili" : "Possible bugs"} items={review.possibleBugs} tone="warn" empty="No likely bugs identified." />
-          <ReviewList icon={ShieldCheck} title={italian ? "Sicurezza" : "Security"} items={review.securityConcerns} tone="neutral" empty="No specific security concerns identified." />
-          <TextSection icon={Code2} title={italian ? "Valutazione della leggibilità" : "Readability assessment"} text={review.readabilityAssessment} />
+          <ReviewList icon={Bug} title={copy.problems} items={review.problems} tone="warn" empty={copy.emptyProblems} />
+          <ReviewList icon={Target} title={copy.bugs} items={review.possibleBugs} tone="warn" empty={copy.emptyBugs} />
+          <ReviewList icon={ShieldCheck} title={copy.security} items={review.securityConcerns} tone="neutral" empty={copy.emptySecurity} />
+          <TextSection icon={Code2} title={copy.readability} text={review.readabilityAssessment} />
         </div>
       </ReviewPanel>
 
       <ReviewPanel instanceId={instanceId} id="acceptance" activeTab={activeTab}>
         <ReviewList
           icon={ClipboardCheck}
-          title={italian ? "Criteri di accettazione" : "Acceptance criteria"}
+          title={copy.acceptance}
           items={review.acceptanceCriteriaAssessment}
           tone="neutral"
-          empty="No acceptance-criteria assessment is available."
+          empty={copy.emptyAcceptance}
         />
       </ReviewPanel>
 
       <ReviewPanel instanceId={instanceId} id="learning" activeTab={activeTab}>
         <div className="space-y-7">
           <section className="border-l-4 border-[#c8f169] bg-[#f5f8ef] p-5">
-            <h3 className="flex items-center gap-2 font-semibold"><BookOpen aria-hidden="true" size={18} />{italian ? "Spiegazione educativa" : "Educational explanation"}</h3>
+            <h3 className="flex items-center gap-2 font-semibold"><BookOpen aria-hidden="true" size={18} />{copy.education}</h3>
             <p className="mt-3 whitespace-pre-wrap leading-7 text-[#52615b]">{review.educationalExplanation}</p>
           </section>
-          <TextSection icon={Lightbulb} title={italian ? "Soluzione ideale in breve" : "Ideal solution, in short"} text={review.conciseIdealSolution} />
-          <TextSection icon={Target} title={italian ? "Prossimo ticket consigliato" : "Recommended next ticket"} text={review.recommendedNextTicket} />
+          <TextSection icon={Lightbulb} title={copy.ideal} text={review.conciseIdealSolution} />
+          <TextSection icon={Target} title={copy.next} text={review.recommendedNextTicket} />
           <section>
-            <h3 className="font-semibold">{italian ? "Competenze da studiare" : "Skills to study next"}</h3>
+            <h3 className="font-semibold">{copy.skills}</h3>
             {review.skillsToStudy.length ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {review.skillsToStudy.map((skill, index) => (
@@ -196,7 +191,7 @@ export function SeniorReviewCard({
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-sm leading-6 text-[#64736d]">No study topics were suggested.</p>
+              <p className="mt-3 text-sm leading-6 text-[#64736d]">{copy.emptySkills}</p>
             )}
           </section>
         </div>

@@ -222,6 +222,7 @@ describe("shared Zod schemas", () => {
       sessionId: "00000000-0000-4000-8000-000000000020",
       submissionRevision: 0,
       ticket: generatedTicket,
+      language: "Italian",
       approach: "A sufficiently detailed approach to solve this task.",
       code: "Check the request state, then render the matching UI branch.",
       difficulties: "",

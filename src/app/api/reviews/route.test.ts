@@ -41,6 +41,7 @@ function reviewRequest() {
       sessionId: "00000000-0000-4000-8000-000000000050",
       submissionRevision: 0,
       ticket,
+      language: "English",
       submissionType: "Pseudocode / technical plan",
       approach: "A detailed technical approach covering the requested behavior.",
       code: "Check loading, error, empty, and populated states in order.",
@@ -78,5 +79,6 @@ describe("POST /api/reviews duplicate protection", () => {
     expect(payload.error.code).toBe("DUPLICATE_REVIEW");
     expect(payload.error.message).toContain("Edit submission");
     expect(mockedGenerateReview).toHaveBeenCalledTimes(1);
+    expect(mockedGenerateReview).toHaveBeenCalledWith(expect.objectContaining({ language: "English" }));
   });
 });

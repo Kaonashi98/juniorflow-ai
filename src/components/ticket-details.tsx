@@ -2,23 +2,19 @@
 
 import { AlertTriangle, CheckCircle2, Clock3, Code2, FileCode2, Flag, Lightbulb, Target } from "lucide-react";
 import { useLanguage } from "@/components/app-providers";
-import type { Locale } from "@/lib/i18n";
 import type { WorkTicket } from "@/types";
-
-const COPY: Record<Locale, Record<"sample" | "priority" | "difficulty" | "estimated" | "context" | "problem" | "objective" | "requirements" | "acceptance" | "technologies" | "files" | "hint" | "mistakes", string>> = {
-  en: { sample: "SAMPLE TICKET / DEMO MODE", priority: "Priority", difficulty: "Difficulty", estimated: "Estimated", context: "Company context", problem: "The problem", objective: "Objective", requirements: "Requirements", acceptance: "Acceptance criteria", technologies: "Technologies", files: "Likely files to modify", hint: "Starting hint", mistakes: "Common mistakes" },
-  it: { sample: "TICKET DI ESEMPIO / MODALITÀ DEMO", priority: "Priorità", difficulty: "Difficoltà", estimated: "Stima", context: "Contesto aziendale", problem: "Il problema", objective: "Obiettivo", requirements: "Requisiti", acceptance: "Criteri di accettazione", technologies: "Tecnologie", files: "File che potresti modificare", hint: "Suggerimento iniziale", mistakes: "Errori comuni" },
-};
+import { UI_COPY } from "@/lib/ui-copy";
+import { formatDifficulty, formatEstimatedTime, formatPriority } from "@/lib/presentation";
 
 export function TicketDetails({ ticket }: { ticket: WorkTicket }) {
   const { locale } = useLanguage();
-  const copy = COPY[locale];
+  const copy = UI_COPY[locale].ticket;
   return (
     <article className="min-w-0 border border-[#d5ddd6] bg-white">
       <header className="border-b border-[#dfe5df] p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">{ticket.isDemo && <span className="bg-[#c8f169] px-2.5 py-1 text-xs font-bold tracking-wide text-[#14261f]">{copy.sample}</span>}<span className="border border-[#d5ddd6] px-2.5 py-1 font-mono text-xs text-[#64736d]">{ticket.ticketId}</span></div>
         <h1 className="mt-5 text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl">{ticket.title}</h1>
-        <div className="mt-6 grid gap-3 sm:grid-cols-3"><Meta icon={Flag} label={copy.priority} value={ticket.priority} /><Meta icon={Target} label={copy.difficulty} value={ticket.difficulty} /><Meta icon={Clock3} label={copy.estimated} value={ticket.estimatedTime} /></div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-3"><Meta icon={Flag} label={copy.priority} value={formatPriority(ticket.priority, locale)} /><Meta icon={Target} label={copy.difficulty} value={formatDifficulty(ticket.difficulty, locale)} /><Meta icon={Clock3} label={copy.estimated} value={formatEstimatedTime(ticket.estimatedTime, locale)} /></div>
       </header>
       <div className="space-y-9 p-6 sm:p-8">
         <Section title={copy.context}><p>{ticket.companyContext}</p></Section>

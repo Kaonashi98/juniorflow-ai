@@ -90,10 +90,12 @@ export async function generateReview(input: ReviewInput): Promise<SeniorReview> 
       "Never claim code was compiled, executed, or tested unless the submission includes credible evidence or test output.",
       "Identify realistic bugs and security concerns without inventing issues.",
       "The concise ideal solution should teach the direction without becoming an unnecessarily long implementation.",
+      "Write every natural-language review field in the requested language. Keep code, technology names, and file names technically precise.",
       "Return only the requested structured output.",
     ].join(" "),
     input: JSON.stringify({
       task: "Review this solution against its ticket.",
+      language: input.language,
       ticket: input.ticket,
       submission: {
         submissionType: input.submissionType,

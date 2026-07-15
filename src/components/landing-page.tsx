@@ -4,62 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, BriefcaseBusiness, Check, Code2, FileText, MessageSquareCode, Sparkles, Timer } from "lucide-react";
 import { useLanguage } from "@/components/app-providers";
-import type { Locale } from "@/lib/i18n";
-
-type LandingCopy = {
-  badge: string; titleStart: string; titleAccent: string; titleEnd: string; intro: string;
-  start: string; demo: string; benefits: string[]; how: string; gap: string;
-  steps: { title: string; description: string }[];
-  practice: string; around: string; skills: string[];
-  ready: string; readyBody: string; create: string;
-  estimated: string; senior: string; seniorReady: string; accessNote: string;
-};
-
-const COPY: Record<Locale, LandingCopy> = {
-  en: {
-    badge: "Your AI work simulator", titleStart: "Your first job,", titleAccent: "before", titleEnd: "the first job.",
-    intro: "Practice realistic developer tickets, think like a teammate, and get the kind of feedback a thoughtful senior would give you.",
-    start: "Start your first ticket", demo: "View demo ticket", benefits: ["No account", "No setup", "Built for juniors"],
-    how: "How it works", gap: "Close the gap between tutorials and teamwork.",
-    steps: [
-      { title: "Set your level", description: "Tell us your role, experience, stack, and the time you have today." },
-      { title: "Work a real ticket", description: "Get a scoped task with context, constraints, and acceptance criteria." },
-      { title: "Learn from review", description: "Submit your approach and get practical feedback from an AI senior." },
-    ],
-    practice: "Practice that feels useful", around: "Learn the work around the code.",
-    skills: ["Read real acceptance criteria", "Explain your technical choices", "Spot bugs and security risks", "Build a study plan from feedback"],
-    ready: "Ready to clock in?", readyBody: "Pick your stack and get a focused ticket sized for the time you have.", create: "Create my simulation",
-    estimated: "Estimated", senior: "Senior review", seniorReady: "Ready when you are", accessNote: "No account is required. Live GPT-5.6 requests use a temporary code provided to authorized testers.",
-  },
-  it: {
-    badge: "Il tuo simulatore di lavoro con AI", titleStart: "Il tuo primo lavoro,", titleAccent: "prima", titleEnd: "del primo lavoro.",
-    intro: "Affronta ticket realistici, ragiona come un membro del team e ricevi il feedback che ti darebbe un senior attento.",
-    start: "Inizia il primo ticket", demo: "Vedi il ticket demo", benefits: ["Nessun account", "Nessuna configurazione", "Pensato per junior"],
-    how: "Come funziona", gap: "Colma la distanza tra tutorial e lavoro di squadra.",
-    steps: [
-      { title: "Imposta il tuo livello", description: "Indica ruolo, esperienza, stack e tempo disponibile oggi." },
-      { title: "Lavora su un vero ticket", description: "Ricevi un’attività mirata con contesto, vincoli e criteri di accettazione." },
-      { title: "Impara dalla review", description: "Invia il tuo approccio e ricevi feedback pratico da un senior AI." },
-    ],
-    practice: "Esercitazione davvero utile", around: "Impara anche il lavoro intorno al codice.",
-    skills: ["Leggi criteri di accettazione realistici", "Spiega le tue scelte tecniche", "Individua bug e rischi di sicurezza", "Crea un piano di studio dal feedback"],
-    ready: "Pronto a iniziare?", readyBody: "Scegli il tuo stack e ricevi un ticket adatto al tempo che hai.", create: "Crea la mia simulazione",
-    estimated: "Stima", senior: "Review del senior", seniorReady: "Pronta quando vuoi", accessNote: "Non serve un account. Le richieste GPT-5.6 reali usano un codice temporaneo fornito ai tester autorizzati.",
-  },
-};
+import { LANDING_COPY } from "@/lib/landing-copy";
+import { formatDifficulty, formatEstimatedTime } from "@/lib/presentation";
 
 const stepIcons = [BriefcaseBusiness, FileText, MessageSquareCode];
 
 export function LandingPage() {
   const { locale } = useLanguage();
-  const copy = COPY[locale];
+  const copy = LANDING_COPY[locale];
   return (
     <main>
       <section className="relative overflow-hidden border-b border-[#dce2dc]">
         <div className="dot-grid absolute inset-y-0 right-0 hidden w-[42%] opacity-70 lg:block" />
         <div className="relative mx-auto grid max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-32">
           <div>
-            <Image src="/branding/juniorflow-ai-brand.png" alt={locale === "it" ? "Logo ufficiale JuniorFlow AI" : "Official JuniorFlow AI logo"} width={1536} height={1024} priority className="mb-6 h-24 w-auto border border-[#d5ddd6] object-cover shadow-[5px_5px_0_#c8f169]" />
+            <Image src="/branding/juniorflow-ai-brand.png" alt={copy.logoAlt} width={1536} height={1024} priority className="mb-6 h-24 w-auto border border-[#d5ddd6] object-cover shadow-[5px_5px_0_#c8f169]" />
             <div className="mb-7 inline-flex items-center gap-2 border border-[#c9d2c9] bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#52615b]"><Sparkles aria-hidden="true" size={14} className="text-[#5e7a17]" />{copy.badge}</div>
             <h1 className="text-balance max-w-3xl text-5xl font-semibold leading-[1.03] tracking-[-0.045em] text-[#14261f] sm:text-6xl lg:text-7xl">
               {copy.titleStart} <span className="relative inline-block">{copy.titleAccent}<span className="absolute inset-x-0 bottom-1 -z-10 h-3 bg-[#c8f169] sm:bottom-2" /></span>{" "}{copy.titleEnd}
@@ -77,12 +36,12 @@ export function LandingPage() {
             <div className="relative border border-[#14261f] bg-white shadow-[10px_10px_0_#14261f]">
               <div className="flex items-center justify-between border-b border-[#dce2dc] px-5 py-4"><div className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-[#ff7066]" /><span className="size-2.5 rounded-full bg-[#f5c451]" /><span className="size-2.5 rounded-full bg-[#74bf78]" /></div><span className="font-mono text-xs text-[#64736d]">JF-2048</span></div>
               <div className="p-6 sm:p-8">
-                <div className="mb-5 flex flex-wrap gap-2"><span className="bg-[#eef8d6] px-2.5 py-1 text-xs font-semibold text-[#536e12]">EASY</span><span className="bg-[#f1f3f0] px-2.5 py-1 text-xs font-semibold text-[#52615b]">FRONT-END</span></div>
-                <h2 className="text-2xl font-semibold leading-tight tracking-tight">Add an empty state to the project dashboard</h2>
-                <p className="mt-4 leading-7 text-[#64736d]">New users see a blank dashboard. Create a helpful empty state that guides them to their first project.</p>
+                <div className="mb-5 flex flex-wrap gap-2"><span className="bg-[#eef8d6] px-2.5 py-1 text-xs font-semibold text-[#536e12]">{formatDifficulty("Easy", locale).toUpperCase()}</span><span className="bg-[#f1f3f0] px-2.5 py-1 text-xs font-semibold text-[#52615b]">FRONT-END</span></div>
+                <h2 className="text-2xl font-semibold leading-tight tracking-tight">{copy.sampleTitle}</h2>
+                <p className="mt-4 leading-7 text-[#64736d]">{copy.sampleBody}</p>
                 <div className="mt-6 grid gap-3 border-t border-[#e3e8e2] pt-6 sm:grid-cols-2">
-                  <div className="flex items-center gap-3"><Timer aria-hidden="true" size={18} className="text-[#5e7a17]" /><div><p className="text-xs text-[#66736d]">{copy.estimated}</p><p className="text-sm font-semibold">60–90 min</p></div></div>
-                  <div className="flex items-center gap-3"><Code2 aria-hidden="true" size={18} className="text-[#5e7a17]" /><div><p className="text-xs text-[#66736d]">Stack</p><p className="text-sm font-semibold">React · TypeScript</p></div></div>
+                  <div className="flex items-center gap-3"><Timer aria-hidden="true" size={18} className="text-[#5e7a17]" /><div><p className="text-xs text-[#66736d]">{copy.estimated}</p><p className="text-sm font-semibold">{formatEstimatedTime("60–90 minutes", locale)}</p></div></div>
+                  <div className="flex items-center gap-3"><Code2 aria-hidden="true" size={18} className="text-[#5e7a17]" /><div><p className="text-xs text-[#66736d]">{copy.stack}</p><p className="text-sm font-semibold">React · TypeScript</p></div></div>
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -31,7 +31,9 @@ import {
   mergeTechnologies,
   profileInputSchema,
 } from "@/schemas";
-import type { DeveloperRole } from "@/types";
+import type { DeveloperRole, TicketLanguage } from "@/types";
+import { UI_COPY, localizedApiError } from "@/lib/ui-copy";
+import { formatExperience, formatEstimatedTime, formatRole, formatTicketLanguage, syncTicketLanguage, ticketLanguageForLocale } from "@/lib/presentation";
 import { useAccess, useLanguage } from "@/components/app-providers";
 
 const ticketResponseSchema = z.object({ ticket: generatedTicketSchema });
@@ -46,27 +48,29 @@ export const GUIDED_PROFILE_EXAMPLE = {
   projectDescription: "A project-management dashboard for small remote teams. Users can create projects, invite teammates, and track tasks.",
 };
 
-const roleDescriptions: Record<DeveloperRole, string> = {
-  "Front-End": "Interfaces and web experiences",
-  "Back-End": "APIs, data, and services",
-  "Full-Stack": "End-to-end product work",
-  Mobile: "iOS and Android apps",
-};
-
 export function ProfileForm() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const copy = UI_COPY[locale];
   const { unlocked, openUnlock } = useAccess();
   const [selectedRole, setSelectedRole] = useState<DeveloperRole>("Front-End");
   const [technologies, setTechnologies] = useState<string[]>(["React", "TypeScript"]);
   const [customTechnologies, setCustomTechnologies] = useState("");
   const [experience, setExperience] = useState("6–12 months");
   const [availableTime, setAvailableTime] = useState("2 hours");
-  const [ticketLanguage, setTicketLanguage] = useState("English");
+  const [ticketLanguage, setTicketLanguage] = useState<TicketLanguage>(() => ticketLanguageForLocale(locale));
+  const ticketLanguageManuallySelected = useRef(false);
   const [projectDescription, setProjectDescription] = useState(GUIDED_PROFILE_EXAMPLE.projectDescription);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ClientApiError | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setTicketLanguage((current) => syncTicketLanguage(locale, current, ticketLanguageManuallySelected.current));
+      setProjectDescription((current) => current === GUIDED_PROFILE_EXAMPLE.projectDescription || current === UI_COPY.it.profile.guidedDescription ? copy.profile.guidedDescription : current);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [locale, copy.profile.guidedDescription]);
   const inFlight = useRef(false);
   const customValidation = customTechnologiesSchema.safeParse(customTechnologies);
   const effectiveCustomTechnologies = getEffectiveCustomTechnologies(
@@ -74,9 +78,9 @@ export function ProfileForm() {
     customTechnologies,
   );
   const customError = !customValidation.success
-    ? customValidation.error.issues[0]?.message ?? "Check other technologies."
+    ? copy.profile.customInvalid
     : effectiveCustomTechnologies.length > 5
-      ? "Add no more than five custom technologies."
+      ? copy.profile.customLimit
       : null;
   const combinedTechnologies = mergeTechnologies(
     technologies,
@@ -99,8 +103,9 @@ export function ProfileForm() {
     setTechnologies(GUIDED_PROFILE_EXAMPLE.technologies);
     setCustomTechnologies(GUIDED_PROFILE_EXAMPLE.customTechnologies);
     setAvailableTime(GUIDED_PROFILE_EXAMPLE.availableTime);
-    setTicketLanguage(GUIDED_PROFILE_EXAMPLE.language);
-    setProjectDescription(GUIDED_PROFILE_EXAMPLE.projectDescription);
+    ticketLanguageManuallySelected.current = false;
+    setTicketLanguage(ticketLanguageForLocale(locale));
+    setProjectDescription(copy.profile.guidedDescription);
     setError(null);
   }
 
@@ -180,7 +185,7 @@ export function ProfileForm() {
                   <label key={role} className={`relative cursor-pointer border p-4 transition-colors focus-within:ring-2 focus-within:ring-[#5e7a17] focus-within:ring-offset-2 ${selectedRole === role ? "border-[#14261f] bg-[#f4f7ed]" : "border-[#d8dfd9] hover:border-[#99a79f]"}`}>
                     <input className="sr-only" type="radio" name="role" value={role} checked={selectedRole === role} onChange={() => setSelectedRole(role)} />
                     <span className="flex items-start justify-between gap-3">
-                      <span><span className="block font-semibold">{role}</span><span className="mt-1 block text-sm text-[#66736d]">{roleDescriptions[role]}</span></span>
+                      <span><span className="block font-semibold">{formatRole(role, locale)}</span><span className="mt-1 block text-sm text-[#66736d]">{copy.profile.roleDescriptions[role]}</span></span>
                       {selectedRole === role && <span className="flex size-5 items-center justify-center bg-[#c8f169]"><Check aria-hidden="true" size={14} /></span>}
                     </span>
                   </label>
@@ -193,11 +198,11 @@ export function ProfileForm() {
             <div className="grid gap-6 sm:grid-cols-2">
               <label className="block text-sm font-semibold">
                 <span className="flex items-center gap-2"><PanelsTopLeft aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.experience")}</span>
-                <select name="experience" className={fieldClass} value={experience} onChange={(event) => setExperience(event.target.value)}>{EXPERIENCE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select><span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.experienceHelp")}</span>
+                <select name="experience" className={fieldClass} value={experience} onChange={(event) => setExperience(event.target.value)}>{EXPERIENCE_OPTIONS.map((option) => <option key={option} value={option}>{formatExperience(option, locale)}</option>)}</select><span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.experienceHelp")}</span>
               </label>
               <label className="block text-sm font-semibold">
                 <span className="flex items-center gap-2"><Clock3 aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.time")}</span>
-                <select name="availableTime" className={fieldClass} value={availableTime} onChange={(event) => setAvailableTime(event.target.value)}>{TIME_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select><span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.timeHelp")}</span>
+                <select name="availableTime" className={fieldClass} value={availableTime} onChange={(event) => setAvailableTime(event.target.value)}>{TIME_OPTIONS.map((option) => <option key={option} value={option}>{formatEstimatedTime(option, locale)}</option>)}</select><span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.timeHelp")}</span>
               </label>
             </div>
 
@@ -218,7 +223,7 @@ export function ProfileForm() {
                   {t("profile.other")} <span className="font-normal text-[#66736d]">({t("profile.optional")})</span>
                 </label>
                 <p id="custom-technologies-help" className="mt-1 text-sm leading-6 text-[#66736d]">
-                  Add technologies that are not listed above, separated by commas.
+                  {copy.profile.customHelp}
                 </p>
                 <input
                   id="custom-technologies"
@@ -230,12 +235,12 @@ export function ProfileForm() {
                   aria-describedby="custom-technologies-help custom-technologies-count"
                   aria-invalid={Boolean(customError)}
                   className={`${fieldClass} mt-2`}
-                  placeholder="e.g. Docker, Redis, GraphQL"
+                  placeholder={copy.profile.customPlaceholder}
                 />
                 <div className="mt-1 flex items-start justify-between gap-4">
                   <div>
                     {customError && <p className="text-sm text-[#a34235]" role="alert">{customError}</p>}
-                    {!customError && combinedTechnologies.length === 0 && <p className="text-sm text-[#a34235]" role="alert">Choose or add at least one technology.</p>}
+                    {!customError && combinedTechnologies.length === 0 && <p className="text-sm text-[#a34235]" role="alert">{copy.profile.techRequired}</p>}
                   </div>
                   <span id="custom-technologies-count" className="shrink-0 text-xs text-[#66736d]">{customTechnologies.length}/150</span>
                 </div>
@@ -244,7 +249,7 @@ export function ProfileForm() {
 
             <label className="block text-sm font-semibold">
               <span className="flex items-center gap-2"><Languages aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.ticketLanguage")}</span>
-              <select name="language" className={fieldClass} value={ticketLanguage} onChange={(event) => setTicketLanguage(event.target.value)}>{LANGUAGE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
+              <select name="language" className={fieldClass} value={ticketLanguage} onChange={(event) => { ticketLanguageManuallySelected.current = true; setTicketLanguage(event.target.value as TicketLanguage); }}>{LANGUAGE_OPTIONS.map((option) => <option key={option} value={option}>{formatTicketLanguage(option, locale)}</option>)}</select>
               <span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.interfaceVsTicket")}</span>
             </label>
 
@@ -252,16 +257,16 @@ export function ProfileForm() {
               {t("profile.project")}
               <span className="mt-1 block font-normal leading-6 text-[#66736d]">{t("profile.projectHelp")}</span>
               <textarea name="projectDescription" required minLength={20} maxLength={800} rows={5} className={`${fieldClass} py-3`} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} />
-              <span className="mt-1 block text-right text-xs font-normal text-[#66736d]">20–800 characters</span>
+              <span className="mt-1 block text-right text-xs font-normal text-[#66736d]">{copy.profile.chars}</span>
             </label>
 
             {error && (
               <div role="alert" className="border border-[#e5c8bc] bg-[#fff7f3] p-4 text-sm text-[#8f3f2d]">
-                <p className="font-semibold">Ticket generation unavailable</p>
-                <p className="mt-1 leading-6">{error.message}</p>
+                <p className="font-semibold">{copy.profile.unavailable}</p>
+                <p className="mt-1 leading-6">{localizedApiError(error.code, locale)}</p>
                 <div className="mt-3 flex flex-wrap gap-4">
-                  {error.retryable && <button type="button" onClick={() => formRef.current?.requestSubmit()} className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4"><RotateCcw aria-hidden="true" size={15} />Retry</button>}
-                  <Link href="/demo" className="font-semibold underline underline-offset-4">Open sample demo</Link>
+                  {error.retryable && <button type="button" onClick={() => formRef.current?.requestSubmit()} className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4"><RotateCcw aria-hidden="true" size={15} />{copy.common.retry}</button>}
+                  <Link href="/demo" className="font-semibold underline underline-offset-4">{copy.common.demo}</Link>
                 </div>
               </div>
             )}
@@ -271,14 +276,14 @@ export function ProfileForm() {
         <aside className="border border-[#d5ddd6] bg-[#eef1e9] p-5 lg:sticky lg:top-24">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">{t("profile.setup")}</p>
           <dl className="mt-5 space-y-4 text-sm">
-            <div><dt className="text-[#66736d]">Role</dt><dd className="mt-1 font-semibold">{selectedRole}</dd></div>
-            <div><dt className="text-[#66736d]">Stack</dt><dd className="mt-1 font-semibold">{combinedTechnologies.length ? combinedTechnologies.join(", ") : "Not selected"}</dd></div>
-            <div><dt className="text-[#66736d]">AI model</dt><dd className="mt-1 font-semibold">GPT-5.6</dd></div>
+            <div><dt className="text-[#66736d]">{copy.common.role}</dt><dd className="mt-1 font-semibold">{formatRole(selectedRole, locale)}</dd></div>
+            <div><dt className="text-[#66736d]">{copy.common.stack}</dt><dd className="mt-1 font-semibold">{combinedTechnologies.length ? combinedTechnologies.join(", ") : copy.common.notSelected}</dd></div>
+            <div><dt className="text-[#66736d]">{copy.common.model}</dt><dd className="mt-1 font-semibold">GPT-5.6</dd></div>
           </dl>
           <div className="mt-6 border-t border-[#d5ddd6] pt-5">
             <p className="mb-4 text-xs leading-5 text-[#66736d]">{t("profile.limited")}</p>
             <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
-              {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />GPT-5.6 is creating…</> : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
+              {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />{copy.profile.creating}</> : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
           </div>
         </aside>

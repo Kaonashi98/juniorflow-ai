@@ -1,5 +1,9 @@
 # JuniorFlow AI
 
+![JuniorFlow AI official logo](public/branding/juniorflow-ai-brand.png)
+
+[Live demo](https://juniorflow-ai.vercel.app) · Education · OpenAI Build Week 2026
+
 JuniorFlow AI is a first-job simulator for aspiring junior developers, created for the Education category of OpenAI Build Week 2026.
 
 It turns the gap between tutorials and real engineering work into a guided practice loop: configure a developer profile, receive a realistic company ticket, submit an approach or working code, and get an educational senior-developer review.
@@ -42,17 +46,20 @@ JuniorFlow AI simulates that workflow without requiring an employer, mentor, acc
 
 ```text
 Browser
-  |-- /simulate
-  |     +-- POST /api/tickets ----> OpenAI Responses API
-  |-- /session/[id]
-  |     +-- POST /api/reviews ----> OpenAI Responses API
-  |-- /history -------------------> versioned localStorage envelope
-  +-- /demo ----------------------> static sample data; no API request
+  |-- POST /api/access/unlock -- BotID + rate limit + same-origin
+  |                               +--> server verifies temporary code
+  |                               +--> signed HttpOnly cookie (max 8 hours)
+  |-- GET  /api/access/status --- signed-cookie verification
+  |-- POST /api/access/lock ----- clears signed cookie
+  |-- POST /api/tickets --------- access + BotID + validation --> OpenAI Responses API
+  |-- POST /api/reviews --------- access + BotID + validation --> OpenAI Responses API
+  |-- /history ------------------ versioned localStorage envelope
+  +-- /demo --------------------- static sample data; no API request
 ```
 
 Next.js App Router pages and layouts render the public application. Interactive client components manage forms and browser storage. Same-origin Route Handlers validate every request before calling the server-only OpenAI module. The browser never receives the API key or imports the OpenAI client.
 
-No database or authentication is used.
+No user accounts or database are used. Live AI access is protected by a temporary server-verified access code and a signed session cookie.
 
 ## Technology stack
 
@@ -81,6 +88,8 @@ Ticket generation and senior review are separate server-side workflows in `src/l
 - set bounded output-token limits and `store: false`;
 - use a 45-second SDK timeout and disable automatic retries.
 
+The interface language localizes controls and metadata only; the separately selected ticket language controls the language of both generated ticket and review content. Existing AI content is never translated automatically.
+
 The ticket prompt treats profile content as untrusted data and adapts scope to experience and available time. The review prompt distinguishes a technical plan from working code and uses delivery-specific evaluation criteria. GPT-5.6 does not execute or compile submitted code, and the review must not claim otherwise.
 
 ## How Codex was used
@@ -98,7 +107,7 @@ Human product decisions include:
 - GPT-5.6 with medium reasoning as the quality/latency balance
 - Separate ticket and review interactions
 - Different evaluation expectations for plans and working code
-- No authentication, database, code execution, or hidden demo fallback
+- No user accounts, database, code execution, or hidden demo fallback; live AI access uses a temporary server-verified code and signed session cookie
 - Browser-local History for a privacy-conscious MVP
 - Confirmation before removing a completed review
 - A clearly isolated static Demo mode
@@ -169,7 +178,7 @@ Accepts a strict bounded profile. Predefined technologies are limited to five, e
 
 ### `POST /api/reviews`
 
-Accepts a session ID, submission revision, generated ticket, delivery type, approach, code or pseudocode, difficulties, and senior question. It returns a validated structured review. Client state and a server-side revision reservation prevent accidental duplicates. Confirmed editing removes the old review, increments the revision, and preserves the ticket, profile, and submission text.
+Accepts a session ID, submission revision, generated ticket, selected ticket language, delivery type, approach, code or pseudocode, difficulties, and senior question. It returns a validated structured review. Client state and a server-side revision reservation prevent accidental duplicates. Confirmed editing removes the old review, increments the revision, and preserves the ticket, profile, and submission text.
 
 Both endpoints require a valid signed access session, same-origin request, and successful BotID Basic check before OpenAI can run. They reject oversized or malformed requests, apply per-instance rate limits, and return sanitized errors without provider details or stack traces.
 
@@ -186,7 +195,7 @@ History uses the `juniorflow-history` key and a versioned envelope:
 
 Entries contain the profile, ticket, status, submission revision, optional submission, optional review, and timestamp. Legacy entries without newer defaulted fields are migrated by the shared schema. Invalid or unknown data is isolated and replaced with a safe empty state.
 
-History is local to the current browser and is not synchronized across devices.
+History is local to the current browser, is not synchronized across devices, and saved session links cannot be reopened in another browser or device.
 
 ## Security and privacy
 

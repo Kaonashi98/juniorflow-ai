@@ -47,10 +47,12 @@ describe("senior review experience", () => {
       submission,
       sessionId,
       3,
+      "Italian",
     );
 
     expect(request.sessionId).toBe(sessionId);
     expect(request.submissionRevision).toBe(3);
+    expect(request.language).toBe("Italian");
     expect(request.submissionType).toBe("Pseudocode / technical plan");
     expect(request.ticket.ticketId).toBe(DEMO_TICKET.ticketId);
     expect(request).not.toHaveProperty("ticket.createdAt");

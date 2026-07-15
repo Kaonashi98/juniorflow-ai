@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, FileQuestion, HardDrive, LoaderCircle } from "lucide-react";
 import { useLanguage } from "@/components/app-providers";
+import { UI_COPY } from "@/lib/ui-copy";
+import { formatDateTime, formatHistoryStatus, formatSubmissionType, formatTicketLanguage } from "@/lib/presentation";
 import {
   getHistoryEntry,
   upsertHistoryEntry,
@@ -34,7 +36,8 @@ export function resolveSavedSession(id: string, storage?: Storage) {
 }
 
 export function SessionView({ id }: { id: string }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const copy = UI_COPY[locale].session;
   const [entry, setEntry] = useState<HistoryEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [storageError, setStorageError] = useState(false);
@@ -102,12 +105,12 @@ export function SessionView({ id }: { id: string }) {
       <div className="border-b border-[#dce2dc] bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
-            <Link href="/history" className="inline-flex items-center gap-2 text-sm font-semibold text-[#64736d] hover:text-[#14261f]"><ArrowLeft aria-hidden="true" size={16} />History</Link>
-            <p className="mt-2 text-sm text-[#66736d]">Status: <span className="font-semibold text-[#14261f]">{statusLabel(entry.status)}</span></p>
-            <p className="mt-1 text-sm text-[#66736d]">Profile stack: <span className="font-semibold text-[#14261f]">{entry.profile.technologies.join(", ")}</span></p>
-            {entry.submission && <p className="mt-1 text-sm text-[#66736d]">Submission type: <span className="font-semibold text-[#14261f]">{entry.submission.submissionType}</span></p>}
+            <Link href="/history" className="inline-flex items-center gap-2 text-sm font-semibold text-[#64736d] hover:text-[#14261f]"><ArrowLeft aria-hidden="true" size={16} />{copy.history}</Link>
+            <p className="mt-2 text-sm text-[#66736d]">{copy.status}: <span className="font-semibold text-[#14261f]">{formatHistoryStatus(entry.status, locale)}</span></p>
+            <p className="mt-1 text-sm text-[#66736d]">{copy.stack}: <span className="font-semibold text-[#14261f]">{entry.profile.technologies.join(", ")}</span></p>
+            {entry.submission && <p className="mt-1 text-sm text-[#66736d]">{copy.submission}: <span className="font-semibold text-[#14261f]">{formatSubmissionType(entry.submission.submissionType, locale)}</span></p>}
           </div>
-          <p className="text-sm text-[#66736d]">Last saved {new Date(entry.savedAt).toLocaleString()}</p>
+          <div className="text-sm text-[#66736d] sm:text-right"><p>{copy.saved} {formatDateTime(entry.savedAt, locale)}</p><p className="mt-2 inline-flex bg-[#eef8d6] px-2.5 py-1 text-[#476013]"><span className="mr-1 font-semibold">{copy.ticketLanguage}:</span> {formatTicketLanguage(entry.profile.language, locale)}</p></div>
         </div>
       </div>
 
@@ -115,10 +118,12 @@ export function SessionView({ id }: { id: string }) {
         <div role="alert" className="border-b border-[#e5c8bc] bg-[#fff7f3]">
           <div className="mx-auto flex max-w-7xl items-start gap-3 px-5 py-3 text-sm text-[#8f3f2d] sm:px-8">
             <HardDrive aria-hidden="true" size={17} className="mt-0.5 shrink-0" />
-            <p>This update could not be saved in browser storage. Keep this page open and check your browser privacy settings.</p>
+            <p>{copy.storage}</p>
           </div>
         </div>
       )}
+
+      {((locale === "it" && entry.profile.language !== "Italian") || (locale === "en" && entry.profile.language !== "English")) && <div className="border-b border-[#dbe5c6] bg-[#f7faef]"><p className="mx-auto max-w-7xl px-5 py-3 text-sm text-[#52615b] sm:px-8">{copy.mismatch.replace("{language}", formatTicketLanguage(entry.profile.language, locale))}</p></div>}
 
       <div className="mx-auto grid max-w-7xl gap-7 px-5 py-8 sm:px-8 sm:py-12 xl:grid-cols-[minmax(0,1.16fr)_minmax(380px,0.84fr)] xl:items-start">
         <TicketDetails ticket={entry.ticket} />
@@ -126,6 +131,7 @@ export function SessionView({ id }: { id: string }) {
           sessionId={entry.id}
           submissionRevision={entry.submissionRevision}
           ticket={entry.ticket}
+          ticketLanguage={entry.profile.language}
           initialSubmission={entry.submission}
           initialReview={entry.review}
           onSubmission={saveSubmission}
@@ -135,10 +141,4 @@ export function SessionView({ id }: { id: string }) {
       </div>
     </main>
   );
-}
-
-function statusLabel(status: HistoryEntry["status"]) {
-  if (status === "reviewed") return "Reviewed";
-  if (status === "solution-draft") return "Solution in progress";
-  return "Ticket generated";
 }

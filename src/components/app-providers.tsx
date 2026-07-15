@@ -11,8 +11,8 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue>({ locale: "en", setLocale: () => undefined, t: (key) => message("en", key) });
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+export function LanguageProvider({ children, initialLocale = "en" }: { children: ReactNode; initialLocale?: Locale }) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
     let stored: string | null = null;
