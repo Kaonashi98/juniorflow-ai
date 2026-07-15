@@ -1,3 +1,4 @@
+
 # JuniorFlow AI
 
 JuniorFlow AI is a first-job simulator for aspiring junior developers, built for the Education category of OpenAI Build Week 2026.
@@ -101,12 +102,15 @@ Accepts a bounded developer profile:
 {
   "role": "Front-End",
   "experience": "6–12 months",
-  "technologies": ["React", "TypeScript"],
+  "technologies": ["React", "TypeScript", "Docker", "GraphQL"],
+  "customTechnologies": "Docker, GraphQL",
   "availableTime": "2 hours",
   "language": "English",
   "projectDescription": "A project management dashboard for small teams."
 }
 ```
+
+The optional `customTechnologies` field accepts up to five comma-separated entries and 150 total characters. The `technologies` array contains the deduplicated combination of predefined and custom choices.
 
 Returns `{ "ticket": ... }` with a validated ticket ID, context, requirements, acceptance criteria, difficulty, likely files, hint, and common mistakes.
 

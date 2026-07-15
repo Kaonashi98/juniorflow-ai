@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -48,6 +49,7 @@ export function HistoryList() {
         entry.ticket.title.toLowerCase().includes(normalized) ||
         entry.ticket.ticketId.toLowerCase().includes(normalized) ||
         entry.profile.role.toLowerCase().includes(normalized) ||
+        entry.profile.technologies.some((item) => item.toLowerCase().includes(normalized)) ||
         entry.ticket.technologies.some((item) => item.toLowerCase().includes(normalized));
       return matchesText && (status === "all" || entry.status === status);
     });
@@ -124,6 +126,9 @@ export function HistoryList() {
                     <span className="flex items-center gap-1.5"><Clock3 aria-hidden="true" size={15} />{entry.ticket.estimatedTime}</span>
                     <span>{entry.profile.role}</span>
                   </div>
+                  <p className="mt-2 line-clamp-2 text-sm text-[#718079]">
+                    Profile stack: {entry.profile.technologies.join(" · ")}
+                  </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button type="button" onClick={() => removeEntry(entry)} aria-label={`Delete ${entry.ticket.title}`} className="inline-flex size-11 items-center justify-center border border-[#d5ddd6] text-[#8e4a3a] hover:border-[#8e4a3a]"><Trash2 aria-hidden="true" size={17} /></button>

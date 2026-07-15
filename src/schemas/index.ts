@@ -15,6 +15,7 @@ export const experienceLevelSchema = z.enum([
   "Less than 6 months",
   "6–12 months",
   "1–2 years",
+  "Junior with internship experience",
 ]);
 
 export const ticketLanguageSchema = z.enum([
@@ -24,16 +25,134 @@ export const ticketLanguageSchema = z.enum([
   "French",
 ]);
 
+export const PREDEFINED_TECHNOLOGY_OPTIONS = [
+  "React",
+  "Next.js",
+  "TypeScript",
+  "JavaScript",
+  "Node.js",
+  "Python",
+  "Java",
+  "React Native",
+  "Flutter",
+  "SQL",
+  "Angular",
+  "Spring Boot",
+  "REST APIs",
+  "MySQL",
+  "PostgreSQL",
+  "Git / GitHub",
+  "HTML / CSS",
+] as const;
+
+const predefinedTechnologySet = new Set<string>(
+  PREDEFINED_TECHNOLOGY_OPTIONS.map((item) => item.toLowerCase()),
+);
+
+function dedupeTechnologies(values: string[]) {
+  const seen = new Set<string>();
+  return values
+    .map((value) => value.trim())
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (!value || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+export function normalizeCustomTechnologies(value: string) {
+  return dedupeTechnologies(value.split(","));
+}
+
+export function mergeTechnologies(
+  predefined: string[],
+  customInput: string,
+) {
+  return dedupeTechnologies([
+    ...predefined,
+    ...normalizeCustomTechnologies(customInput),
+  ]);
+}
+
+export const customTechnologiesSchema = z
+  .string()
+  .max(150, "Other technologies must be 150 characters or fewer.")
+  .superRefine((value, context) => {
+    const entries = normalizeCustomTechnologies(value);
+    if (entries.length > 5) {
+      context.addIssue({
+        code: "custom",
+        message: "Add no more than five custom technologies.",
+      });
+    }
+    if (entries.some((entry) => entry.length > 40)) {
+      context.addIssue({
+        code: "custom",
+        message: "Each custom technology must be 40 characters or fewer.",
+      });
+    }
+  })
+  .transform((value) => normalizeCustomTechnologies(value).join(", "));
+
+const selectedTechnologiesSchema = z
+  .array(boundedText("Technology", 1, 40))
+  .min(1, "Choose or add at least one technology.")
+  .max(10, "Choose no more than five predefined and five custom technologies.")
+  .transform(dedupeTechnologies);
+
 export const profileInputSchema = z
   .object({
     role: developerRoleSchema,
     experience: experienceLevelSchema,
-    technologies: z.array(boundedText("Technology", 1, 40)).min(1).max(5),
+    technologies: selectedTechnologiesSchema,
+    customTechnologies: customTechnologiesSchema.optional(),
     availableTime: z.enum(["30 minutes", "1 hour", "2 hours", "Half a day"]),
     language: ticketLanguageSchema,
     projectDescription: boundedText("Project description", 20, 800),
   })
-  .strict();
+  .strict()
+  .superRefine((profile, context) => {
+    const customEntries = normalizeCustomTechnologies(
+      profile.customTechnologies ?? "",
+    );
+    const customSet = new Set(customEntries.map((item) => item.toLowerCase()));
+    const technologySet = new Set(
+      profile.technologies.map((item) => item.toLowerCase()),
+    );
+    const predefinedCount = profile.technologies.filter((item) =>
+      predefinedTechnologySet.has(item.toLowerCase()),
+    ).length;
+
+    if (predefinedCount > 5) {
+      context.addIssue({
+        code: "custom",
+        path: ["technologies"],
+        message: "Choose no more than five predefined technologies.",
+      });
+    }
+
+    for (const technology of profile.technologies) {
+      const key = technology.toLowerCase();
+      if (!predefinedTechnologySet.has(key) && !customSet.has(key)) {
+        context.addIssue({
+          code: "custom",
+          path: ["technologies"],
+          message: "Custom technologies must be declared in Other technologies.",
+        });
+      }
+    }
+
+    for (const technology of customEntries) {
+      if (!technologySet.has(technology.toLowerCase())) {
+        context.addIssue({
+          code: "custom",
+          path: ["technologies"],
+          message: "The technology list must include every custom technology.",
+        });
+      }
+    }
+  });
 
 const outputText = (max: number) => z.string().trim().min(1).max(max);
 const outputList = (itemMax: number, maxItems = 8) =>

@@ -1,3 +1,4 @@
+
 export type {
   ApiErrorPayload,
   GeneratedTicket,
@@ -21,7 +22,8 @@ export type ExperienceLevel =
   | "Just starting"
   | "Less than 6 months"
   | "6–12 months"
-  | "1–2 years";
+  | "1–2 years"
+  | "Junior with internship experience";
 
 export type TicketLanguage = "English" | "Italian" | "Spanish" | "French";
 export type TicketPriority = "Low" | "Medium" | "High" | "Critical";

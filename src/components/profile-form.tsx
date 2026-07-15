@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { FormEvent, useRef, useState } from "react";
@@ -26,7 +24,12 @@ import {
   TECHNOLOGY_OPTIONS,
   TIME_OPTIONS,
 } from "@/lib/constants";
-import { generatedTicketSchema, profileInputSchema } from "@/schemas";
+import {
+  customTechnologiesSchema,
+  generatedTicketSchema,
+  mergeTechnologies,
+  profileInputSchema,
+} from "@/schemas";
 import type { DeveloperRole } from "@/types";
 
 const ticketResponseSchema = z.object({ ticket: generatedTicketSchema });
@@ -42,10 +45,19 @@ export function ProfileForm() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<DeveloperRole>("Front-End");
   const [technologies, setTechnologies] = useState<string[]>(["React", "TypeScript"]);
+  const [customTechnologies, setCustomTechnologies] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ClientApiError | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const inFlight = useRef(false);
+  const customValidation = customTechnologiesSchema.safeParse(customTechnologies);
+  const customError = customValidation.success
+    ? null
+    : customValidation.error.issues[0]?.message ?? "Check other technologies.";
+  const combinedTechnologies = mergeTechnologies(
+    technologies,
+    customTechnologies,
+  );
 
   function toggleTechnology(technology: string) {
     setTechnologies((current) =>
@@ -65,7 +77,8 @@ export function ProfileForm() {
     const candidate = {
       role: selectedRole,
       experience: String(formData.get("experience") ?? ""),
-      technologies,
+      technologies: combinedTechnologies,
+      customTechnologies,
       availableTime: String(formData.get("availableTime") ?? ""),
       language: String(formData.get("language") ?? ""),
       projectDescription: String(formData.get("projectDescription") ?? ""),
@@ -145,7 +158,7 @@ export function ProfileForm() {
 
             <fieldset>
               <legend className="flex items-center gap-2 text-sm font-semibold"><Code2 aria-hidden="true" size={16} className="text-[#678616]" />Technologies <span className="font-normal text-[#829089]">(choose up to 5)</span></legend>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
                 {TECHNOLOGY_OPTIONS.map((technology) => {
                   const selected = technologies.includes(technology);
                   return (
@@ -155,7 +168,33 @@ export function ProfileForm() {
                   );
                 })}
               </div>
-              {technologies.length === 0 && <p className="mt-2 text-sm text-[#a34235]" role="alert">Choose at least one technology.</p>}
+              <div className="mt-4 border-t border-[#e1e6e1] pt-4">
+                <label htmlFor="custom-technologies" className="block text-sm font-semibold">
+                  Other technologies <span className="font-normal text-[#829089]">(optional)</span>
+                </label>
+                <p id="custom-technologies-help" className="mt-1 text-sm leading-6 text-[#74817b]">
+                  Add technologies that are not listed above, separated by commas.
+                </p>
+                <input
+                  id="custom-technologies"
+                  name="customTechnologies"
+                  type="text"
+                  value={customTechnologies}
+                  onChange={(event) => setCustomTechnologies(event.target.value)}
+                  maxLength={150}
+                  aria-describedby="custom-technologies-help custom-technologies-count"
+                  aria-invalid={Boolean(customError)}
+                  className={`${fieldClass} mt-2`}
+                  placeholder="e.g. Docker, Redis, GraphQL"
+                />
+                <div className="mt-1 flex items-start justify-between gap-4">
+                  <div>
+                    {customError && <p className="text-sm text-[#a34235]" role="alert">{customError}</p>}
+                    {!customError && combinedTechnologies.length === 0 && <p className="text-sm text-[#a34235]" role="alert">Choose or add at least one technology.</p>}
+                  </div>
+                  <span id="custom-technologies-count" className="shrink-0 text-xs text-[#8a9690]">{customTechnologies.length}/150</span>
+                </div>
+              </div>
             </fieldset>
 
             <label className="block text-sm font-semibold">
@@ -187,12 +226,12 @@ export function ProfileForm() {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">Ticket setup</p>
           <dl className="mt-5 space-y-4 text-sm">
             <div><dt className="text-[#718079]">Role</dt><dd className="mt-1 font-semibold">{selectedRole}</dd></div>
-            <div><dt className="text-[#718079]">Stack</dt><dd className="mt-1 font-semibold">{technologies.length ? technologies.join(", ") : "Not selected"}</dd></div>
+            <div><dt className="text-[#718079]">Stack</dt><dd className="mt-1 font-semibold">{combinedTechnologies.length ? combinedTechnologies.join(", ") : "Not selected"}</dd></div>
             <div><dt className="text-[#718079]">AI model</dt><dd className="mt-1 font-semibold">GPT-5.6</dd></div>
           </dl>
           <div className="mt-6 border-t border-[#d5ddd6] pt-5">
             <p className="mb-4 text-xs leading-5 text-[#718079]">Your profile is sent securely to the server. The API key never reaches the browser.</p>
-            <button type="submit" disabled={isLoading || technologies.length === 0} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
+            <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
               {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />GPT-5.6 is creating…</> : <>Generate my ticket <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
           </div>

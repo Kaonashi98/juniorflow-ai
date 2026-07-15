@@ -1,3 +1,5 @@
+import { PREDEFINED_TECHNOLOGY_OPTIONS } from "@/schemas";
+
 import type {
   DeveloperRole,
   ExperienceLevel,
@@ -11,19 +13,9 @@ export const EXPERIENCE_OPTIONS: ExperienceLevel[] = [
   "Less than 6 months",
   "6–12 months",
   "1–2 years",
+  "Junior with internship experience",
 ];
 export const LANGUAGE_OPTIONS: TicketLanguage[] = ["English", "Italian", "Spanish", "French"];
 export const TIME_OPTIONS = ["30 minutes", "1 hour", "2 hours", "Half a day"];
-export const TECHNOLOGY_OPTIONS = [
-  "React",
-  "Next.js",
-  "TypeScript",
-  "JavaScript",
-  "Node.js",
-  "Python",
-  "Java",
-  "React Native",
-  "Flutter",
-  "SQL",
-];
+export const TECHNOLOGY_OPTIONS = [...PREDEFINED_TECHNOLOGY_OPTIONS];
 export const STORAGE_KEY = "juniorflow-history";

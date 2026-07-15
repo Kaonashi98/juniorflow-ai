@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -73,6 +74,7 @@ export function SessionView({ id }: { id: string }) {
           <div>
             <Link href="/history" className="inline-flex items-center gap-2 text-sm font-semibold text-[#64736d] hover:text-[#14261f]"><ArrowLeft aria-hidden="true" size={16} />History</Link>
             <p className="mt-2 text-sm text-[#718079]">Status: <span className="font-semibold text-[#14261f]">{statusLabel(entry.status)}</span></p>
+            <p className="mt-1 text-sm text-[#718079]">Profile stack: <span className="font-semibold text-[#14261f]">{entry.profile.technologies.join(", ")}</span></p>
           </div>
           <p className="text-sm text-[#718079]">Last saved {new Date(entry.savedAt).toLocaleString()}</p>
         </div>

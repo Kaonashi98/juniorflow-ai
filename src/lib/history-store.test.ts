@@ -1,3 +1,4 @@
+
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   clearHistory,
@@ -66,7 +67,9 @@ describe("versioned history storage", () => {
     expect(loadHistory(storage).entries).toHaveLength(1);
 
     const serialized = serializeHistory([entry]);
-    expect(parseHistory(serialized)?.version).toBe(1);
+    const parsed = parseHistory(serialized);
+    expect(parsed?.version).toBe(1);
+    expect(parsed?.entries[0]?.profile.customTechnologies).toBeUndefined();
   });
 
   it("isolates corrupted data and recovers safely", () => {
