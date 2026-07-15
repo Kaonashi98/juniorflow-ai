@@ -75,17 +75,23 @@ export function mergeTechnologies(
   ]);
 }
 
+export function getEffectiveCustomTechnologies(
+  predefined: string[],
+  customInput: string,
+) {
+  const predefinedSet = new Set(
+    predefined.map((technology) => technology.toLowerCase()),
+  );
+  return normalizeCustomTechnologies(customInput).filter(
+    (technology) => !predefinedSet.has(technology.toLowerCase()),
+  );
+}
+
 export const customTechnologiesSchema = z
   .string()
   .max(150, "Other technologies must be 150 characters or fewer.")
   .superRefine((value, context) => {
     const entries = normalizeCustomTechnologies(value);
-    if (entries.length > 5) {
-      context.addIssue({
-        code: "custom",
-        message: "Add no more than five custom technologies.",
-      });
-    }
     if (entries.some((entry) => entry.length > 40)) {
       context.addIssue({
         code: "custom",
@@ -98,14 +104,23 @@ export const customTechnologiesSchema = z
 const selectedTechnologiesSchema = z
   .array(boundedText("Technology", 1, 40))
   .min(1, "Choose or add at least one technology.")
-  .max(10, "Choose no more than five predefined and five custom technologies.")
   .transform(dedupeTechnologies);
+
+const predefinedTechnologiesSchema = z
+  .array(z.enum(PREDEFINED_TECHNOLOGY_OPTIONS))
+  .transform(dedupeTechnologies)
+  .pipe(
+    z
+      .array(z.string())
+      .max(5, "Choose no more than five predefined technologies."),
+  );
 
 export const profileInputSchema = z
   .object({
     role: developerRoleSchema,
     experience: experienceLevelSchema,
     technologies: selectedTechnologiesSchema,
+    predefinedTechnologies: predefinedTechnologiesSchema.optional(),
     customTechnologies: customTechnologiesSchema.optional(),
     availableTime: z.enum(["30 minutes", "1 hour", "2 hours", "Half a day"]),
     language: ticketLanguageSchema,
@@ -117,14 +132,28 @@ export const profileInputSchema = z
       profile.customTechnologies ?? "",
     );
     const customSet = new Set(customEntries.map((item) => item.toLowerCase()));
+    const predefinedTechnologies =
+      profile.predefinedTechnologies ??
+      profile.technologies.filter((item) => {
+        const key = item.toLowerCase();
+        return predefinedTechnologySet.has(key) && !customSet.has(key);
+      });
+    const effectiveCustomTechnologies = getEffectiveCustomTechnologies(
+      predefinedTechnologies,
+      profile.customTechnologies ?? "",
+    );
+    const expectedTechnologies = dedupeTechnologies([
+      ...predefinedTechnologies,
+      ...effectiveCustomTechnologies,
+    ]);
     const technologySet = new Set(
       profile.technologies.map((item) => item.toLowerCase()),
     );
-    const predefinedCount = profile.technologies.filter((item) =>
-      predefinedTechnologySet.has(item.toLowerCase()),
-    ).length;
+    const expectedSet = new Set(
+      expectedTechnologies.map((item) => item.toLowerCase()),
+    );
 
-    if (predefinedCount > 5) {
+    if (predefinedTechnologies.length > 5) {
       context.addIssue({
         code: "custom",
         path: ["technologies"],
@@ -132,25 +161,32 @@ export const profileInputSchema = z
       });
     }
 
-    for (const technology of profile.technologies) {
-      const key = technology.toLowerCase();
-      if (!predefinedTechnologySet.has(key) && !customSet.has(key)) {
-        context.addIssue({
-          code: "custom",
-          path: ["technologies"],
-          message: "Custom technologies must be declared in Other technologies.",
-        });
-      }
+    if (effectiveCustomTechnologies.length > 5) {
+      context.addIssue({
+        code: "custom",
+        path: ["customTechnologies"],
+        message: "Add no more than five custom technologies.",
+      });
     }
 
-    for (const technology of customEntries) {
-      if (!technologySet.has(technology.toLowerCase())) {
-        context.addIssue({
-          code: "custom",
-          path: ["technologies"],
-          message: "The technology list must include every custom technology.",
-        });
-      }
+    if (profile.technologies.length > 10) {
+      context.addIssue({
+        code: "custom",
+        path: ["technologies"],
+        message: "Choose no more than ten total technologies.",
+      });
+    }
+
+    const listsMatch =
+      expectedSet.size === technologySet.size &&
+      [...expectedSet].every((technology) => technologySet.has(technology));
+    if (!listsMatch) {
+      context.addIssue({
+        code: "custom",
+        path: ["technologies"],
+        message:
+          "The technology list must match the predefined and custom selections.",
+      });
     }
   });
 

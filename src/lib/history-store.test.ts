@@ -9,7 +9,7 @@ import {
   serializeHistory,
   upsertHistoryEntry,
 } from "@/lib/history-store";
-import type { ProfileInput } from "@/schemas";
+import { profileInputSchema, type ProfileInput } from "@/schemas";
 import { STORAGE_KEY } from "@/lib/constants";
 import { DEMO_TICKET } from "@/data/demo-ticket";
 
@@ -70,6 +70,28 @@ describe("versioned history storage", () => {
     const parsed = parseHistory(serialized);
     expect(parsed?.version).toBe(1);
     expect(parsed?.entries[0]?.profile.customTechnologies).toBeUndefined();
+    expect(parsed?.entries[0]?.profile.predefinedTechnologies).toBeUndefined();
+  });
+
+  it("persists the sanitized combined stack for new profile entries", () => {
+    const newProfile = profileInputSchema.parse({
+      ...profile,
+      predefinedTechnologies: ["React", "TypeScript"],
+      technologies: ["React", "TypeScript", "Docker"],
+      customTechnologies: "typescript, Docker, docker",
+    });
+    const entry = createHistoryEntry(
+      newProfile,
+      { ...DEMO_TICKET, isDemo: undefined },
+      "00000000-0000-4000-8000-000000000012",
+    );
+
+    const parsed = parseHistory(serializeHistory([entry]));
+    expect(parsed?.entries[0]?.profile.technologies).toEqual([
+      "React",
+      "TypeScript",
+      "Docker",
+    ]);
   });
 
   it("isolates corrupted data and recovers safely", () => {

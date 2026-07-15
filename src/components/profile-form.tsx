@@ -27,6 +27,7 @@ import {
 import {
   customTechnologiesSchema,
   generatedTicketSchema,
+  getEffectiveCustomTechnologies,
   mergeTechnologies,
   profileInputSchema,
 } from "@/schemas";
@@ -51,9 +52,15 @@ export function ProfileForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const inFlight = useRef(false);
   const customValidation = customTechnologiesSchema.safeParse(customTechnologies);
-  const customError = customValidation.success
-    ? null
-    : customValidation.error.issues[0]?.message ?? "Check other technologies.";
+  const effectiveCustomTechnologies = getEffectiveCustomTechnologies(
+    technologies,
+    customTechnologies,
+  );
+  const customError = !customValidation.success
+    ? customValidation.error.issues[0]?.message ?? "Check other technologies."
+    : effectiveCustomTechnologies.length > 5
+      ? "Add no more than five custom technologies."
+      : null;
   const combinedTechnologies = mergeTechnologies(
     technologies,
     customTechnologies,
@@ -78,6 +85,7 @@ export function ProfileForm() {
       role: selectedRole,
       experience: String(formData.get("experience") ?? ""),
       technologies: combinedTechnologies,
+      predefinedTechnologies: technologies,
       customTechnologies,
       availableTime: String(formData.get("availableTime") ?? ""),
       language: String(formData.get("language") ?? ""),
