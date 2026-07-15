@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SessionView } from "@/components/session-view";
+import { LocalizedDocumentTitle } from "@/components/localized-document-title";
 
 export const metadata: Metadata = {
   title: "Work session",
@@ -12,5 +13,5 @@ export default async function SessionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <SessionView id={id} />;
+  return <><LocalizedDocumentTitle page="session" /><SessionView id={id} /></>;
 }

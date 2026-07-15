@@ -95,7 +95,7 @@ export function SolutionWorkspace({
   onReview?: (submission: TicketSubmission, review: SeniorReview) => void;
   onEditSubmission?: () => void;
 }) {
-  const { unlocked, openUnlock } = useAccess();
+  const { unlocked, unlockRevision, openUnlock, dismissUnlockSuccess } = useAccess();
   const { t, locale } = useLanguage();
   const solutionCopy = UI_COPY[locale].solution;
   const commonCopy = UI_COPY[locale].common;
@@ -116,7 +116,15 @@ export function SolutionWorkspace({
       : false,
   );
   const [error, setError] = useState<ClientApiError | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const observedUnlockRevision = useRef(unlockRevision);
+  useEffect(() => {
+    if (observedUnlockRevision.current === unlockRevision) return;
+    observedUnlockRevision.current = unlockRevision;
+    const timeout = window.setTimeout(() => {
+      setError((current) => current?.code === "ACCESS_REQUIRED" ? null : current);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [unlockRevision]);  const formRef = useRef<HTMLFormElement>(null);
   const inFlight = useRef(false);
   const hasReview = Boolean(review);
 
@@ -150,6 +158,7 @@ export function SolutionWorkspace({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
+    dismissUnlockSuccess();
     if (!unlocked) {
       openUnlock();
       setError(new ClientApiError(t("profile.unlockRequired"), "ACCESS_REQUIRED", false));

@@ -1,4 +1,5 @@
 import type { HistoryEntry, WorkTicket } from "@/types";
+import type { Locale } from "@/lib/i18n";
 
 export const DEMO_TICKET: WorkTicket = {
   ticketId: "JF-2048",
@@ -58,3 +59,34 @@ export const DEMO_HISTORY: HistoryEntry[] = [
     savedAt: "2026-07-15T08:30:00.000Z",
   },
 ];
+
+const DEMO_TICKET_IT: WorkTicket = {
+  ...DEMO_TICKET,
+  title: "Aggiungi uno stato vuoto alla dashboard dei progetti",
+  companyContext: "Flowdesk è un piccolo SaaS di gestione progetti usato da team di prodotto distribuiti. Al primo accesso, i nuovi utenti vedono una dashboard vuota prima di creare il loro primo progetto.",
+  problem: "Quando l'array dei progetti non contiene elementi, la dashboard mostra un pannello bianco. Il supporto segnala che gli utenti in prova pensano che il prodotto non funzioni e abbandonano prima di creare un progetto.",
+  objective: "Crea uno stato vuoto chiaro e accessibile che spieghi il passaggio successivo e aiuti gli utenti a creare il primo progetto.",
+  requirements: [
+    "Mostra lo stato vuoto solo quando la richiesta dei progetti termina correttamente senza risultati.",
+    "Includi un titolo, una breve descrizione e l'azione principale “Crea progetto”.",
+    "Mantieni invariata la griglia esistente quando è presente almeno un progetto.",
+    "Usa i componenti del design system già disponibili nel codice.",
+  ],
+  acceptanceCriteria: [
+    "Dato un array di progetti vuoto, lo stato vuoto è visibile.",
+    "Dato almeno un progetto, viene mostrata la griglia esistente.",
+    "L'azione principale porta a /projects/new.",
+    "Lo stato è accessibile da tastiera e funziona con una viewport larga 320 px.",
+  ],
+  initialHint: "Individua il punto in cui vengono distinti caricamento, errore e successo della richiesta. Lo stato vuoto appartiene al ramo di successo.",
+  commonMistakes: [
+    "Mostrare brevemente lo stato vuoto mentre la richiesta è ancora in corso.",
+    "Controllare il valore dell'array invece della sua lunghezza.",
+    "Usare un div cliccabile al posto di un link o pulsante semantico.",
+  ],
+};
+
+export const DEMO_TICKETS_BY_LOCALE: Record<Locale, WorkTicket> = {
+  en: DEMO_TICKET,
+  it: DEMO_TICKET_IT,
+};

@@ -38,6 +38,9 @@ import { useAccess, useLanguage } from "@/components/app-providers";
 
 const ticketResponseSchema = z.object({ ticket: generatedTicketSchema });
 
+export function clearAccessRequiredError(error: ClientApiError | null) {
+  return error?.code === "ACCESS_REQUIRED" ? null : error;
+}
 export const GUIDED_PROFILE_EXAMPLE = {
   role: "Full-Stack" as DeveloperRole,
   experience: "Junior with internship experience",
@@ -52,7 +55,7 @@ export function ProfileForm() {
   const router = useRouter();
   const { t, locale } = useLanguage();
   const copy = UI_COPY[locale];
-  const { unlocked, openUnlock } = useAccess();
+  const { unlocked, unlockRevision, openUnlock, dismissUnlockSuccess } = useAccess();
   const [selectedRole, setSelectedRole] = useState<DeveloperRole>("Front-End");
   const [technologies, setTechnologies] = useState<string[]>(["React", "TypeScript"]);
   const [customTechnologies, setCustomTechnologies] = useState("");
@@ -63,6 +66,7 @@ export function ProfileForm() {
   const [projectDescription, setProjectDescription] = useState(GUIDED_PROFILE_EXAMPLE.projectDescription);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ClientApiError | null>(null);
+  const observedUnlockRevision = useRef(unlockRevision);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -71,6 +75,14 @@ export function ProfileForm() {
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [locale, copy.profile.guidedDescription]);
+  useEffect(() => {
+    if (observedUnlockRevision.current === unlockRevision) return;
+    observedUnlockRevision.current = unlockRevision;
+    const timeout = window.setTimeout(() => {
+      setError(clearAccessRequiredError);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [unlockRevision]);
   const inFlight = useRef(false);
   const customValidation = customTechnologiesSchema.safeParse(customTechnologies);
   const effectiveCustomTechnologies = getEffectiveCustomTechnologies(
@@ -112,6 +124,7 @@ export function ProfileForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
+    dismissUnlockSuccess();
     if (!unlocked) {
       openUnlock();
       setError(new ClientApiError(t("profile.unlockRequired"), "ACCESS_REQUIRED", false));
@@ -166,7 +179,7 @@ export function ProfileForm() {
     "mt-2 min-h-12 w-full border border-[#cbd4cc] bg-white px-3.5 text-[#14261f] transition-colors placeholder:text-[#6a766f] hover:border-[#84958c] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40";
 
   return (
-    <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+    <section className="mx-auto max-w-5xl px-5 py-6 sm:px-8 sm:py-8">
       <form ref={formRef} onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
         <div className="lg:col-span-2 flex flex-col gap-2 border border-[#dbe5c6] bg-[#f5f8ef] p-4 sm:flex-row sm:items-center sm:justify-between">
           <div><p className="text-sm font-semibold">{t("profile.example")}</p><p className="mt-1 text-xs text-[#66736d]">{t("profile.exampleHelp")}</p></div>

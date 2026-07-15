@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, FormEvent, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { detectLocale, LOCALE_STORAGE_KEY, message, type Locale, type MessageKey } from "@/lib/i18n";
 
 type LanguageContextValue = {
@@ -48,29 +49,49 @@ export function LanguageProvider({ children, initialLocale = "en" }: { children:
 }
 
 export function useLanguage() {
-  const context = useContext(LanguageContext);
-  return context;
+  return useContext(LanguageContext);
 }
 
 type AccessContextValue = {
   unlocked: boolean;
   checking: boolean;
+  unlockRevision: number;
   openUnlock: () => void;
   lock: () => Promise<void>;
+  dismissUnlockSuccess: () => void;
 };
 
-const AccessContext = createContext<AccessContextValue>({ unlocked: false, checking: false, openUnlock: () => undefined, lock: async () => undefined });
+const AccessContext = createContext<AccessContextValue>({
+  unlocked: false,
+  checking: true,
+  unlockRevision: 0,
+  openUnlock: () => undefined,
+  lock: async () => undefined,
+  dismissUnlockSuccess: () => undefined,
+});
 
 export function AccessProvider({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
   const [unlocked, setUnlocked] = useState(false);
   const [checking, setChecking] = useState(true);
   const [open, setOpen] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [unlockRevision, setUnlockRevision] = useState(0);
+  const [successVisible, setSuccessVisible] = useState(false);
   const codeRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
+  const successTimer = useRef<number | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const dismissUnlockSuccess = useCallback(() => {
+    setSuccessVisible(false);
+    if (successTimer.current !== null) {
+      window.clearTimeout(successTimer.current);
+      successTimer.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +114,15 @@ export function AccessProvider({ children }: { children: ReactNode }) {
     return () => previousFocus.current?.focus();
   }, [open]);
 
+  useEffect(() => () => {
+    if (successTimer.current !== null) window.clearTimeout(successTimer.current);
+  }, []);
+
+  function closeDialog() {
+    setOpen(false);
+    setShowCode(false);
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
@@ -111,7 +141,14 @@ export function AccessProvider({ children }: { children: ReactNode }) {
         return;
       }
       setUnlocked(true);
-      setOpen(false);
+      setUnlockRevision((current) => current + 1);
+      setSuccessVisible(true);
+      if (successTimer.current !== null) window.clearTimeout(successTimer.current);
+      successTimer.current = window.setTimeout(() => {
+        setSuccessVisible(false);
+        successTimer.current = null;
+      }, 4_000);
+      closeDialog();
       event.currentTarget.reset();
     } catch {
       setError(t("access.error"));
@@ -121,6 +158,7 @@ export function AccessProvider({ children }: { children: ReactNode }) {
   }
 
   async function lock() {
+    dismissUnlockSuccess();
     try {
       await fetch("/api/access/lock", { method: "POST" });
     } finally {
@@ -128,9 +166,21 @@ export function AccessProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function openUnlock() {
+    dismissUnlockSuccess();
+    setError("");
+    setShowCode(false);
+    setOpen(true);
+  }
+
   return (
-    <AccessContext.Provider value={{ unlocked, checking, openUnlock: () => { setError(""); setOpen(true); }, lock }}>
+    <AccessContext.Provider value={{ unlocked, checking, unlockRevision, openUnlock, lock, dismissUnlockSuccess }}>
       {children}
+      {successVisible && (
+        <div role="status" aria-live="polite" className="fixed right-4 top-20 z-[65] max-w-sm border border-[#b8cf83] bg-[#f5fbe8] px-4 py-3 text-sm font-semibold text-[#476013] shadow-sm">
+          {t("access.success")}
+        </div>
+      )}
       {open && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#14261f]/60 p-5">
           <div
@@ -140,7 +190,7 @@ export function AccessProvider({ children }: { children: ReactNode }) {
             aria-labelledby="unlock-title"
             aria-describedby="unlock-description"
             onKeyDown={(event) => {
-              if (event.key === "Escape") setOpen(false);
+              if (event.key === "Escape") closeDialog();
               if (event.key !== "Tab") return;
               const items = dialogRef.current?.querySelectorAll<HTMLElement>("input,button:not([disabled])");
               const first = items?.[0];
@@ -153,15 +203,21 @@ export function AccessProvider({ children }: { children: ReactNode }) {
             <h2 id="unlock-title" className="text-2xl font-semibold">{t("access.title")}</h2>
             <p id="unlock-description" className="mt-2 leading-7 text-[#64736d]">{t("access.description")}</p>
             <form onSubmit={submit} className="mt-5">
-              <label className="block text-sm font-semibold">
-                {t("access.code")}
-                <input ref={codeRef} name="code" type="password" autoComplete="one-time-code" required maxLength={128} className="mt-2 min-h-12 w-full border border-[#cbd4cc] px-3.5 focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40" />
-              </label>
+              <label htmlFor="demo-access-code" className="block text-sm font-semibold">{t("access.code")}</label>
+              <div className="relative mt-2">
+                <input id="demo-access-code" ref={codeRef} name="code" type={showCode ? "text" : "password"} autoComplete="one-time-code" required maxLength={128} className="min-h-12 w-full border border-[#cbd4cc] px-3.5 pr-12 focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40" />
+                <button type="button" onClick={() => setShowCode((current) => !current)} aria-label={showCode ? t("access.hideCode") : t("access.showCode")} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[#52615b] focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-inset">
+                  {showCode ? <EyeOff aria-hidden="true" size={18} /> : <Eye aria-hidden="true" size={18} />}
+                </button>
+              </div>
               {error && <p role="alert" className="mt-3 text-sm text-[#9a4433]">{error}</p>}
               <p className="mt-3 text-xs leading-5 text-[#66736d]">{t("access.help")}</p>
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => setOpen(false)} className="min-h-11 border border-[#cbd4cc] px-4 font-semibold">{t("access.cancel")}</button>
-                <button type="submit" disabled={submitting} className="min-h-11 bg-[#14261f] px-4 font-semibold text-white disabled:opacity-60">{t("access.submit")}</button>
+                <button type="button" onClick={closeDialog} aria-label={t("access.cancel")} className="min-h-11 border border-[#cbd4cc] px-4 font-semibold">{t("access.cancel")}</button>
+                <button type="submit" disabled={submitting} className="inline-flex min-h-11 items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white disabled:opacity-60">
+                  {submitting && <LoaderCircle aria-hidden="true" size={17} className="animate-spin" />}
+                  {submitting ? t("access.unlocking") : t("access.submit")}
+                </button>
               </div>
             </form>
           </div>
@@ -172,6 +228,5 @@ export function AccessProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAccess() {
-  const context = useContext(AccessContext);
-  return context;
+  return useContext(AccessContext);
 }

@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEMO_TICKET } from "@/data/demo-ticket";
-import { createAccessToken, ACCESS_COOKIE_NAME } from "@/lib/access-session";
+import { ACCESS_MAX_AGE_SECONDS, createAccessToken, ACCESS_COOKIE_NAME } from "@/lib/access-session";
 import { PublicApiError } from "@/lib/api-errors";
 
 const { botCheck } = vi.hoisted(() => ({ botCheck: vi.fn() }));
@@ -15,14 +15,13 @@ import { POST } from "@/app/api/tickets/route";
 const mockGenerateTicket = vi.mocked(generateTicket);
 const SECRET = "test-app-session-secret-with-more-than-thirty-two-characters";
 
-function request(cookie?: string) {
+function request(cookie?: string, origin: string | null = "http://localhost") {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (origin !== null) headers.origin = origin;
+  if (cookie) headers.cookie = ACCESS_COOKIE_NAME + "=" + cookie;
   return new Request("http://localhost/api/tickets", {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "http://localhost",
-      ...(cookie ? { cookie: `${ACCESS_COOKIE_NAME}=${cookie}` } : {}),
-    },
+    headers,
     body: JSON.stringify({
       role: "Front-End",
       experience: "Junior with internship experience",
@@ -36,7 +35,7 @@ function request(cookie?: string) {
   });
 }
 
-describe("POST /api/tickets access and BotID protection", () => {
+describe("POST /api/tickets security boundary", () => {
   beforeEach(() => {
     process.env.DEMO_ACCESS_CODE = "temporary-test-code";
     process.env.APP_SESSION_SECRET = SECRET;
@@ -46,10 +45,28 @@ describe("POST /api/tickets access and BotID protection", () => {
     mockGenerateTicket.mockResolvedValue(DEMO_TICKET);
   });
 
-  it("rejects a missing access session without calling OpenAI", async () => {
-    const response = await POST(request());
+  afterEach(() => vi.unstubAllEnvs());
+
+  it.each([
+    ["missing", undefined],
+    ["expired", createAccessToken(SECRET, Date.now() - (ACCESS_MAX_AGE_SECONDS + 1) * 1000)],
+    ["tampered", createAccessToken(SECRET) + "x"],
+    ["wrong-secret", createAccessToken("different-test-secret-with-more-than-thirty-two-characters")],
+  ])("rejects a %s access session without calling OpenAI", async (_case, cookie) => {
+    const response = await POST(request(cookie));
     expect(response.status).toBe(401);
     expect((await response.json()).error.code).toBe("ACCESS_REQUIRED");
+    expect(mockGenerateTicket).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["cross-origin", "https://attacker.example"],
+    ["missing production origin", null],
+  ])("rejects %s before calling OpenAI", async (_case, origin) => {
+    if (origin === null) vi.stubEnv("NODE_ENV", "production");
+    const response = await POST(request(createAccessToken(SECRET), origin));
+    expect(response.status).toBe(403);
+    expect((await response.json()).error.code).toBe("FORBIDDEN");
     expect(mockGenerateTicket).not.toHaveBeenCalled();
   });
 
@@ -57,7 +74,6 @@ describe("POST /api/tickets access and BotID protection", () => {
     const response = await POST(request(createAccessToken(SECRET)));
     expect(response.status).toBe(200);
     expect(mockGenerateTicket).toHaveBeenCalledTimes(1);
-    expect(mockGenerateTicket).toHaveBeenCalledWith(expect.objectContaining({ language: "English" }));
   });
 
   it("rejects a bot before access validation and never calls OpenAI", async () => {

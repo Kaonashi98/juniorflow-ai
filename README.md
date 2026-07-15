@@ -36,7 +36,7 @@ JuniorFlow AI simulates that workflow without requiring an employer, mentor, acc
 - Structured senior review with scoring, bugs, security, acceptance coverage, guidance, and study skills
 - Duplicate-review protection and a confirmed edit-and-review-again workflow
 - Versioned History in `localStorage` with search, filters, reopening, and deletion
-- Separate static Demo mode that never calls OpenAI
+- Separate fully bilingual English/Italian static Demo mode that never calls OpenAI
 - Temporary access-code gate backed by an eight-hour signed HttpOnly cookie
 - Vercel BotID Basic protection for unlock, ticket, and review requests
 - Loading, error, empty, recovery, and not-found states
@@ -59,7 +59,7 @@ Browser
 
 Next.js App Router pages and layouts render the public application. Interactive client components manage forms and browser storage. Same-origin Route Handlers validate every request before calling the server-only OpenAI module. The browser never receives the API key or imports the OpenAI client.
 
-No user accounts or database are used. Live AI access is protected by a temporary server-verified access code and a signed session cookie.
+The application has no user accounts, identity authentication, or database. Live AI access is protected by a temporary server-verified access code and a signed session cookie. The code authorizes temporary use of the AI demo; it does not identify a user or create an account. Both AI routes reject invalid, expired, or missing signed sessions before OpenAI can be reached.
 
 ## Technology stack
 
@@ -88,7 +88,7 @@ Ticket generation and senior review are separate server-side workflows in `src/l
 - set bounded output-token limits and `store: false`;
 - use a 45-second SDK timeout and disable automatic retries.
 
-The interface language localizes controls and metadata only; the separately selected ticket language controls the language of both generated ticket and review content. Existing AI content is never translated automatically.
+The interface language localizes controls, document titles, and the complete static Demo fixture. The separately selected ticket language controls the language of newly generated ticket and review content. Existing saved AI content is never translated automatically.
 
 The ticket prompt treats profile content as untrusted data and adapts scope to experience and available time. The review prompt distinguishes a technical plan from working code and uses delivery-specific evaluation criteria. GPT-5.6 does not execute or compile submitted code, and the review must not claim otherwise.
 
@@ -147,6 +147,8 @@ APP_SESSION_SECRET=replace_with_at_least_32_random_characters
 ```
 
 Use a randomly generated secret of at least 32 characters for APP_SESSION_SECRET. Share the temporary judge code separately and never commit it. Never prefix credentials with NEXT_PUBLIC_.
+
+After a successful unlock, the dialog closes, an accessible confirmation is announced, and any stale access-required message is cleared. The user remains in control and must explicitly submit the ticket or review request; unlocking never triggers an AI call.
 
 Start the application:
 

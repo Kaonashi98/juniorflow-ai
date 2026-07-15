@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { GUIDED_PROFILE_EXAMPLE } from "@/components/profile-form";
+import { clearAccessRequiredError, GUIDED_PROFILE_EXAMPLE } from "@/components/profile-form";
+import { ClientApiError } from "@/lib/api-client";
 import { profileInputSchema } from "@/schemas";
 
 describe("guided profile example", () => {
@@ -11,5 +12,14 @@ describe("guided profile example", () => {
       technologies: [...GUIDED_PROFILE_EXAMPLE.technologies, "Docker"],
     });
     expect(result.success).toBe(true);
+  });
+});
+describe("access error recovery", () => {
+  it("clears only ACCESS_REQUIRED after an explicit unlock", () => {
+    const accessError = new ClientApiError("Unlock first", "ACCESS_REQUIRED", false);
+    const validationError = new ClientApiError("Invalid", "INVALID_INPUT", false);
+    expect(clearAccessRequiredError(accessError)).toBeNull();
+    expect(clearAccessRequiredError(validationError)).toBe(validationError);
+    expect(clearAccessRequiredError(null)).toBeNull();
   });
 });

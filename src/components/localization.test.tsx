@@ -5,8 +5,10 @@ import { EditSubmissionDialog } from "@/components/solution-workspace";
 import { LandingPage } from "@/components/landing-page";
 import { SeniorReviewCard } from "@/components/senior-review-card";
 import { TicketDetails } from "@/components/ticket-details";
-import { DEMO_REVIEW } from "@/data/demo-review";
-import { DEMO_TICKET } from "@/data/demo-ticket";
+import { DEMO_REVIEW, DEMO_REVIEWS_BY_LOCALE } from "@/data/demo-review";
+import { DEMO_TICKET, DEMO_TICKETS_BY_LOCALE } from "@/data/demo-ticket";
+import { DEMO_SOLUTIONS_BY_LOCALE } from "@/data/demo-solution";
+import { localizedDocumentTitle } from "@/components/localized-document-title";
 
 function italian(children: React.ReactNode) {
   return renderToStaticMarkup(
@@ -45,5 +47,23 @@ describe("Italian static interface copy", () => {
     expect(html).toContain("Annulla");
     expect(html).toContain("Rimuovi la review e modifica");
     expect(html).toContain('role="dialog"');
+  });
+});
+
+describe("localized static demo fixtures", () => {
+  it("switches every natural-language demo layer while preserving technical identifiers", () => {
+    expect(DEMO_TICKETS_BY_LOCALE.it.title).toContain("stato vuoto");
+    expect(DEMO_REVIEWS_BY_LOCALE.it.educationalExplanation).toContain("stato dati");
+    expect(DEMO_SOLUTIONS_BY_LOCALE.it.approach).toContain("componente");
+    expect(DEMO_TICKETS_BY_LOCALE.it.ticketId).toBe(DEMO_TICKETS_BY_LOCALE.en.ticketId);
+    expect(DEMO_TICKETS_BY_LOCALE.it.likelyFiles).toEqual(DEMO_TICKETS_BY_LOCALE.en.likelyFiles);
+    expect(DEMO_SOLUTIONS_BY_LOCALE.it.code).toBe(DEMO_SOLUTIONS_BY_LOCALE.en.code);
+  });
+
+  it("provides localized titles for every route", () => {
+    for (const page of ["home", "simulate", "history", "demo", "guide", "session"] as const) {
+      expect(localizedDocumentTitle(page, "en")).not.toBe(localizedDocumentTitle(page, "it"));
+      expect(localizedDocumentTitle(page, "it")).toContain("JuniorFlow AI");
+    }
   });
 });

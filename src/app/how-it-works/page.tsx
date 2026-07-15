@@ -1,3 +1,4 @@
+import { LocalizedDocumentTitle } from "@/components/localized-document-title";
 import type { Metadata } from "next";
 import { HowItWorksPage } from "@/components/how-it-works-page";
 
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <HowItWorksPage />;
+  return <><LocalizedDocumentTitle page="guide" /><HowItWorksPage /></>;
 }

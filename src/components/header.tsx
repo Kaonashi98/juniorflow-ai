@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { History, KeyRound, LockKeyhole, Sparkles } from "lucide-react";
+import { History, KeyRound, LoaderCircle, LockKeyhole, Sparkles } from "lucide-react";
 import { useAccess, useLanguage } from "@/components/app-providers";
 
 export function Header() {
@@ -13,7 +13,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-[#dce2dc] bg-[#f7f8f3]/95 backdrop-blur">
       <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-2 sm:px-8">
         <Link href="/" className="group flex items-center gap-2.5 font-semibold tracking-tight text-[#14261f]" aria-label={t("nav.home")}>
-          <Image src="/branding/juniorflow-ai-brand.png" alt={locale === "it" ? "Logo ufficiale JuniorFlow AI" : "Official JuniorFlow AI logo"} width={1536} height={1024} priority className="size-10 border border-[#14261f] object-cover" />
+          <Image src="/branding/juniorflow-ai-brand.png" alt={locale === "it" ? "Logo ufficiale JuniorFlow AI" : "Official JuniorFlow AI logo"} width={1536} height={1024} priority className="size-10 border border-[#14261f] object-contain" />
           <span>JuniorFlow <span className="text-[#5e7a17]">AI</span></span>
         </Link>
         <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto text-sm font-medium sm:order-2 sm:w-auto" aria-label={locale === "it" ? "Navigazione principale" : "Main navigation"}>
@@ -27,11 +27,15 @@ export function Header() {
             <option value="en">{t("language.english")}</option>
             <option value="it">{t("language.italian")}</option>
           </select>
-          {!checking && (unlocked ? (
+          {checking ? (
+            <button type="button" disabled aria-label={t("access.checking")} title={t("access.checking")} className="inline-flex min-h-10 items-center gap-1.5 border border-[#b9c4ba] px-2 text-xs font-semibold text-[#66736d] disabled:cursor-wait">
+              <LoaderCircle aria-hidden="true" size={14} className="animate-spin" /><span className="hidden lg:inline">{t("access.checking")}</span>
+            </button>
+          ) : unlocked ? (
             <button type="button" onClick={lock} aria-label={t("access.lock")} className="inline-flex min-h-10 items-center gap-1.5 border border-[#b9c4ba] px-2 text-xs font-semibold text-[#52615b]" title={t("access.unlocked")}><LockKeyhole aria-hidden="true" size={14} /><span className="hidden lg:inline">{t("access.lock")}</span></button>
           ) : (
             <button type="button" onClick={openUnlock} aria-label={t("access.unlock")} className="inline-flex min-h-10 items-center gap-1.5 border border-[#14261f] px-2 text-xs font-semibold text-[#14261f]"><KeyRound aria-hidden="true" size={14} /><span className="hidden lg:inline">{t("access.unlock")}</span></button>
-          ))}
+          )}
         </div>
       </div>
     </header>

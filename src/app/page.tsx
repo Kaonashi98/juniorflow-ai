@@ -1,5 +1,6 @@
 import { LandingPage } from "@/components/landing-page";
 
 export default function Home() {
-  return <LandingPage />;
+  return <><LocalizedDocumentTitle page="home" /><LandingPage /></>;
 }
+import { LocalizedDocumentTitle } from "@/components/localized-document-title";
