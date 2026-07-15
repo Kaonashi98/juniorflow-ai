@@ -68,7 +68,7 @@ export function HistoryList() {
   }
 
   if (!isReady) {
-    return <section className="mx-auto flex min-h-72 max-w-6xl items-center justify-center px-5 py-10 text-sm text-[#718079] sm:px-8">Loading browser history…</section>;
+    return <section className="mx-auto flex min-h-72 max-w-6xl items-center justify-center px-5 py-10 text-sm text-[#66736d] sm:px-8">Loading browser history…</section>;
   }
 
   return (
@@ -89,8 +89,8 @@ export function HistoryList() {
           <label className="block w-full max-w-md text-sm font-semibold">
             Search tickets
             <span className="relative mt-2 block">
-              <Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#77847e]" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-12 w-full border border-[#cbd4cc] bg-white pl-10 pr-4 placeholder:text-[#98a29e] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40" placeholder="Title, ID, role, or technology…" />
+              <Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#66736d]" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-12 w-full border border-[#cbd4cc] bg-white pl-10 pr-4 placeholder:text-[#6a766f] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40" placeholder="Title, ID, role, or technology…" />
             </span>
           </label>
           <label className="block text-sm font-semibold">
@@ -104,7 +104,7 @@ export function HistoryList() {
           </label>
         </div>
         <div className="flex items-center justify-between gap-4 lg:justify-end">
-          <p className="text-sm text-[#74817b]">{filteredEntries.length} {filteredEntries.length === 1 ? "ticket" : "tickets"}</p>
+          <p className="text-sm text-[#66736d]">{filteredEntries.length} {filteredEntries.length === 1 ? "ticket" : "tickets"}</p>
           {entries.length > 0 && <button type="button" onClick={removeAll} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#9a4433] hover:underline"><Trash2 aria-hidden="true" size={15} />Clear all</button>}
         </div>
       </div>
@@ -117,17 +117,17 @@ export function HistoryList() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge status={entry.status} />
-                    <span className="font-mono text-xs text-[#77847e]">{entry.ticket.ticketId}</span>
+                    <span className="font-mono text-xs text-[#66736d]">{entry.ticket.ticketId}</span>
                     {entry.review && <span className="border border-[#cfe0aa] px-2 py-1 text-xs font-semibold text-[#526d14]">{entry.review.overallScore}/100</span>}
                     {entry.submission && <span className="bg-[#eef1e9] px-2 py-1 text-xs font-semibold text-[#52615b]">{entry.submission.submissionType}</span>}
                   </div>
                   <h2 className="mt-3 text-xl font-semibold tracking-tight group-hover:text-[#526d14]">{entry.ticket.title}</h2>
-                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#718079]">
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#66736d]">
                     <span className="flex items-center gap-1.5"><CalendarDays aria-hidden="true" size={15} />{new Date(entry.ticket.createdAt).toLocaleDateString()}</span>
                     <span className="flex items-center gap-1.5"><Clock3 aria-hidden="true" size={15} />{entry.ticket.estimatedTime}</span>
                     <span>{entry.profile.role}</span>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-sm text-[#718079]">
+                  <p className="mt-2 text-sm text-[#66736d]">
                     Profile stack: {entry.profile.technologies.join(" · ")}
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export function HistoryList() {
         <div className="mt-7 border border-dashed border-[#bfc9c0] bg-white px-6 py-16 text-center">
           <span className="mx-auto flex size-12 items-center justify-center bg-[#eef1e9] text-[#64736d]"><FileQuestion aria-hidden="true" size={23} /></span>
           <h2 className="mt-5 text-xl font-semibold">{entries.length ? "No tickets match your filters" : "No saved tickets yet"}</h2>
-          <p className="mx-auto mt-2 max-w-sm leading-7 text-[#718079]">{entries.length ? "Try a different search or status." : "Generate a real ticket and it will be saved here automatically."}</p>
+          <p className="mx-auto mt-2 max-w-sm leading-7 text-[#66736d]">{entries.length ? "Try a different search or status." : "Generate a real ticket and it will be saved here automatically."}</p>
           {entries.length ? (
             <button type="button" onClick={() => { setQuery(""); setStatus("all"); }} className="mt-5 font-semibold text-[#5e7a17] underline underline-offset-4">Clear filters</button>
           ) : (
@@ -153,7 +153,7 @@ export function HistoryList() {
       )}
 
       <div className="mt-8 flex items-start gap-3 border border-[#dbe5c6] bg-[#f5f8ef] p-4 text-sm text-[#52615b]">
-        <Sparkles aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-[#678616]" />
+        <Sparkles aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-[#5e7a17]" />
         <p>History stays in this browser only. No account or database is used.</p>
       </div>
     </section>

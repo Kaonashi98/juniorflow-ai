@@ -21,13 +21,13 @@ export function DemoWorkspace() {
     }, 800);
   }
 
-  const inputClass = "mt-2 w-full border border-[#cbd4cc] bg-white px-3.5 py-3 leading-6 placeholder:text-[#97a29c] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40";
+  const inputClass = "mt-2 w-full border border-[#cbd4cc] bg-white px-3.5 py-3 leading-6 placeholder:text-[#6a766f] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40";
 
   return (
     <div className="min-w-0 space-y-6">
       <form onSubmit={submit} className="border border-[#d5ddd6] bg-white">
         <header className="border-b border-[#e1e6e1] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">Sample solution · Demo mode</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">Sample solution · Demo mode</p>
           <h2 className="mt-2 text-2xl font-semibold">Walk your senior through it.</h2>
           <p className="mt-2 leading-6 text-[#64736d]">This form returns a static sample review and never calls the API.</p>
         </header>
@@ -41,13 +41,13 @@ export function DemoWorkspace() {
           <label className="block text-sm font-semibold">What was difficult?
             <textarea maxLength={1200} rows={3} className={inputClass} placeholder="Tell your senior where you felt unsure…" />
           </label>
-          <label className="block text-sm font-semibold"><span className="flex items-center gap-2"><MessageCircleQuestion aria-hidden="true" size={17} className="text-[#678616]" />Question for your senior</span>
+          <label className="block text-sm font-semibold"><span className="flex items-center gap-2"><MessageCircleQuestion aria-hidden="true" size={17} className="text-[#5e7a17]" />Question for your senior</span>
             <textarea maxLength={1200} rows={3} className={inputClass} defaultValue="Would you test this inside the dashboard component or test EmptyProjects separately?" />
           </label>
           <button type="submit" disabled={isReviewing} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-5 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:opacity-60">
             {isReviewing ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />Loading sample review…</> : <>Show sample review <ArrowRight aria-hidden="true" size={18} /></>}
           </button>
-          <p className="text-center text-xs text-[#7c8983]">Sample ticket / Demo mode — no data is sent to OpenAI.</p>
+          <p className="text-center text-xs text-[#66736d]">Sample ticket / Demo mode — no data is sent to OpenAI.</p>
         </div>
       </form>
       {showReview && <div ref={reviewRef} className="scroll-mt-24"><SeniorReviewCard review={DEMO_REVIEW} demo /></div>}

@@ -72,7 +72,7 @@ export function SessionView({ id }: { id: string }) {
     persist(applyReviewEditDecision(entry, true));
   }
   if (isLoading) {
-    return <main className="flex flex-1 items-center justify-center py-24"><LoaderCircle aria-hidden="true" className="animate-spin text-[#678616]" /><span className="sr-only">Loading saved ticket</span></main>;
+    return <main className="flex flex-1 items-center justify-center py-24"><LoaderCircle aria-hidden="true" className="animate-spin text-[#5e7a17]" /><span className="sr-only">Loading saved ticket</span></main>;
   }
 
   if (!entry) {
@@ -92,11 +92,11 @@ export function SessionView({ id }: { id: string }) {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
             <Link href="/history" className="inline-flex items-center gap-2 text-sm font-semibold text-[#64736d] hover:text-[#14261f]"><ArrowLeft aria-hidden="true" size={16} />History</Link>
-            <p className="mt-2 text-sm text-[#718079]">Status: <span className="font-semibold text-[#14261f]">{statusLabel(entry.status)}</span></p>
-            <p className="mt-1 text-sm text-[#718079]">Profile stack: <span className="font-semibold text-[#14261f]">{entry.profile.technologies.join(", ")}</span></p>
-            {entry.submission && <p className="mt-1 text-sm text-[#718079]">Submission type: <span className="font-semibold text-[#14261f]">{entry.submission.submissionType}</span></p>}
+            <p className="mt-2 text-sm text-[#66736d]">Status: <span className="font-semibold text-[#14261f]">{statusLabel(entry.status)}</span></p>
+            <p className="mt-1 text-sm text-[#66736d]">Profile stack: <span className="font-semibold text-[#14261f]">{entry.profile.technologies.join(", ")}</span></p>
+            {entry.submission && <p className="mt-1 text-sm text-[#66736d]">Submission type: <span className="font-semibold text-[#14261f]">{entry.submission.submissionType}</span></p>}
           </div>
-          <p className="text-sm text-[#718079]">Last saved {new Date(entry.savedAt).toLocaleString()}</p>
+          <p className="text-sm text-[#66736d]">Last saved {new Date(entry.savedAt).toLocaleString()}</p>
         </div>
       </div>
 

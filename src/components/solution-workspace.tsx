@@ -220,13 +220,13 @@ export function SolutionWorkspace({
     isSubmissionValid,
     hasSubmissionChanged,
   });
-  const inputClass = "mt-2 w-full border border-[#cbd4cc] bg-white px-3.5 py-3 leading-6 placeholder:text-[#97a29c] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40 read-only:cursor-default read-only:bg-[#f3f5f1] read-only:text-[#52615b]";
+  const inputClass = "mt-2 w-full border border-[#cbd4cc] bg-white px-3.5 py-3 leading-6 placeholder:text-[#6a766f] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40 read-only:cursor-default read-only:bg-[#f3f5f1] read-only:text-[#52615b]";
 
   return (
     <div className="min-w-0 space-y-6">
       <form ref={formRef} onSubmit={submit} className="border border-[#d5ddd6] bg-white">
         <header className="border-b border-[#e1e6e1] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">Your solution</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">Your solution</p>
           <h2 className="mt-2 text-2xl font-semibold">Walk your senior through it.</h2>
           <p className="mt-2 leading-6 text-[#64736d]">
             {hasReview
@@ -279,7 +279,7 @@ export function SolutionWorkspace({
                 </label>
               ))}
             </div>
-            <p className="mt-2 text-xs leading-5 text-[#74817b]">
+            <p className="mt-2 text-xs leading-5 text-[#66736d]">
               Plans are scored on reasoning and coverage; working code is also reviewed for implementation quality.
             </p>
           </fieldset>
@@ -311,7 +311,7 @@ export function SolutionWorkspace({
               placeholder="Tell your senior where you felt unsure…"
             />
           </label>
-          <label className="block text-sm font-semibold"><span className="flex items-center gap-2"><MessageCircleQuestion aria-hidden="true" size={17} className="text-[#678616]" />Question for your senior</span>
+          <label className="block text-sm font-semibold"><span className="flex items-center gap-2"><MessageCircleQuestion aria-hidden="true" size={17} className="text-[#5e7a17]" />Question for your senior</span>
             <textarea
               name="seniorQuestion"
               readOnly={hasReview}
@@ -382,9 +382,19 @@ export function EditSubmissionDialog({
   onConfirm: () => void;
 }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (open) cancelRef.current?.focus();
+    if (!open) return;
+
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    cancelRef.current?.focus();
+
+    return () => previousFocusRef.current?.focus();
   }, [open]);
 
   if (!open) return null;
@@ -392,12 +402,33 @@ export function EditSubmissionDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#14261f]/55 p-5">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-submission-title"
         aria-describedby="edit-submission-description"
         onKeyDown={(event) => {
-          if (event.key === "Escape") onCancel();
+          if (event.key === "Escape") {
+            event.preventDefault();
+            onCancel();
+            return;
+          }
+
+          if (event.key === "Tab") {
+            const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+              "button:not([disabled])",
+            );
+            const first = focusable?.[0];
+            const last = focusable?.[focusable.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault();
+              last?.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first?.focus();
+            }
+          }
         }}
         className="w-full max-w-md border border-[#14261f] bg-white p-6 shadow-[6px_6px_0_#c8f169]"
       >

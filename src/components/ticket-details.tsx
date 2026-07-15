@@ -36,7 +36,7 @@ export function TicketDetails({ ticket }: { ticket: WorkTicket }) {
         <div className="grid gap-8 md:grid-cols-2">
           <Section title="Requirements"><BulletList items={ticket.requirements} /></Section>
           <Section title="Acceptance criteria">
-            <ul className="space-y-3">{ticket.acceptanceCriteria.map((item) => <li key={item} className="flex gap-3"><CheckCircle2 aria-hidden="true" size={18} className="mt-1 shrink-0 text-[#678616]" /><span>{item}</span></li>)}</ul>
+            <ul className="space-y-3">{ticket.acceptanceCriteria.map((item) => <li key={item} className="flex gap-3"><CheckCircle2 aria-hidden="true" size={18} className="mt-1 shrink-0 text-[#5e7a17]" /><span>{item}</span></li>)}</ul>
           </Section>
         </div>
         <Section title="Technologies">
@@ -47,7 +47,7 @@ export function TicketDetails({ ticket }: { ticket: WorkTicket }) {
         </Section>
         <section className="grid gap-4 md:grid-cols-2">
           <div className="border border-[#dbe5c6] bg-[#f7faef] p-5">
-            <h2 className="flex items-center gap-2 font-semibold"><Lightbulb aria-hidden="true" size={18} className="text-[#678616]" />Starting hint</h2>
+            <h2 className="flex items-center gap-2 font-semibold"><Lightbulb aria-hidden="true" size={18} className="text-[#5e7a17]" />Starting hint</h2>
             <p className="mt-3 leading-7 text-[#5d6c66]">{ticket.initialHint}</p>
           </div>
           <div className="border border-[#eadbd2] bg-[#fdf8f5] p-5">
@@ -61,7 +61,7 @@ export function TicketDetails({ ticket }: { ticket: WorkTicket }) {
 }
 
 function Meta({ icon: Icon, label, value }: { icon: typeof Flag; label: string; value: string }) {
-  return <div className="flex items-center gap-3 bg-[#f4f6f1] p-3"><Icon aria-hidden="true" size={17} className="text-[#678616]" /><div><p className="text-xs text-[#7b8883]">{label}</p><p className="text-sm font-semibold">{value}</p></div></div>;
+  return <div className="flex items-center gap-3 bg-[#f4f6f1] p-3"><Icon aria-hidden="true" size={17} className="text-[#5e7a17]" /><div><p className="text-xs text-[#66736d]">{label}</p><p className="text-sm font-semibold">{value}</p></div></div>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

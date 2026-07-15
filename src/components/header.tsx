@@ -13,7 +13,7 @@ export function Header() {
           <span className="flex size-9 items-center justify-center border border-[#14261f] bg-[#c8f169] transition-transform group-hover:-rotate-3">
             <Braces aria-hidden="true" size={19} strokeWidth={2.4} />
           </span>
-          <span>JuniorFlow <span className="text-[#678616]">AI</span></span>
+          <span>JuniorFlow <span className="text-[#5e7a17]">AI</span></span>
         </Link>
 
         <nav className="flex items-center gap-1 text-sm font-medium" aria-label="Main navigation">

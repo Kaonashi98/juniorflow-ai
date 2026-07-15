@@ -25,7 +25,7 @@ export function LandingPage() {
         <div className="relative mx-auto grid max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-32">
           <div>
             <div className="mb-7 inline-flex items-center gap-2 border border-[#c9d2c9] bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#52615b]">
-              <Sparkles aria-hidden="true" size={14} className="text-[#678616]" /> Your AI work simulator
+              <Sparkles aria-hidden="true" size={14} className="text-[#5e7a17]" /> Your AI work simulator
             </div>
             <h1 className="text-balance max-w-3xl text-5xl font-semibold leading-[1.03] tracking-[-0.045em] text-[#14261f] sm:text-6xl lg:text-7xl">
               Your first job, <span className="relative inline-block">before<span className="absolute inset-x-0 bottom-1 -z-10 h-3 bg-[#c8f169] sm:bottom-2" /></span>{" "}the first job.
@@ -39,7 +39,7 @@ export function LandingPage() {
             </div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#64736d]">
               {["No account", "No setup", "Built for juniors"].map((item) => (
-                <span key={item} className="flex items-center gap-2"><Check aria-hidden="true" size={15} className="text-[#678616]" />{item}</span>
+                <span key={item} className="flex items-center gap-2"><Check aria-hidden="true" size={15} className="text-[#5e7a17]" />{item}</span>
               ))}
             </div>
           </div>
@@ -56,13 +56,13 @@ export function LandingPage() {
                 <h2 className="text-2xl font-semibold leading-tight tracking-tight">Add an empty state to the project dashboard</h2>
                 <p className="mt-4 leading-7 text-[#64736d]">New users see a blank dashboard. Create a helpful empty state that guides them to their first project.</p>
                 <div className="mt-6 grid gap-3 border-t border-[#e3e8e2] pt-6 sm:grid-cols-2">
-                  <div className="flex items-center gap-3"><Timer aria-hidden="true" size={18} className="text-[#678616]" /><div><p className="text-xs text-[#7b8883]">Estimated</p><p className="text-sm font-semibold">60–90 min</p></div></div>
-                  <div className="flex items-center gap-3"><Code2 aria-hidden="true" size={18} className="text-[#678616]" /><div><p className="text-xs text-[#7b8883]">Stack</p><p className="text-sm font-semibold">React · TypeScript</p></div></div>
+                  <div className="flex items-center gap-3"><Timer aria-hidden="true" size={18} className="text-[#5e7a17]" /><div><p className="text-xs text-[#66736d]">Estimated</p><p className="text-sm font-semibold">60–90 min</p></div></div>
+                  <div className="flex items-center gap-3"><Code2 aria-hidden="true" size={18} className="text-[#5e7a17]" /><div><p className="text-xs text-[#66736d]">Stack</p><p className="text-sm font-semibold">React · TypeScript</p></div></div>
                 </div>
               </div>
             </div>
             <div className="absolute -bottom-7 -right-3 flex items-center gap-3 border border-[#dce2dc] bg-[#f7f8f3] px-4 py-3 shadow-sm sm:-right-7">
-              <BadgeCheck aria-hidden="true" className="text-[#678616]" size={22} /><div><p className="text-xs text-[#64736d]">Senior review</p><p className="text-sm font-semibold">Ready when you are</p></div>
+              <BadgeCheck aria-hidden="true" className="text-[#5e7a17]" size={22} /><div><p className="text-xs text-[#64736d]">Senior review</p><p className="text-sm font-semibold">Ready when you are</p></div>
             </div>
           </div>
         </div>
@@ -70,13 +70,13 @@ export function LandingPage() {
 
       <section className="bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#678616]">How it works</p><h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Close the gap between tutorials and teamwork.</h2></div>
+          <div className="max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#5e7a17]">How it works</p><h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Close the gap between tutorials and teamwork.</h2></div>
           <div className="mt-12 grid border-l border-t border-[#dce2dc] md:grid-cols-3">
             {steps.map((step) => {
               const Icon = step.icon;
               return (
                 <article key={step.number} className="group border-b border-r border-[#dce2dc] p-7 transition-colors hover:bg-[#f7f8f3] sm:p-8">
-                  <div className="flex items-start justify-between"><span className="font-mono text-sm text-[#87948f]">{step.number}</span><Icon aria-hidden="true" size={25} className="text-[#678616] transition-transform group-hover:-translate-y-1" /></div>
+                  <div className="flex items-start justify-between"><span className="font-mono text-sm text-[#66736d]">{step.number}</span><Icon aria-hidden="true" size={25} className="text-[#5e7a17] transition-transform group-hover:-translate-y-1" /></div>
                   <h3 className="mt-12 text-xl font-semibold">{step.title}</h3><p className="mt-3 leading-7 text-[#64736d]">{step.description}</p>
                 </article>
               );

@@ -73,7 +73,7 @@ export function SeniorReviewCard({
     <article className="border border-[#14261f] bg-white shadow-[6px_6px_0_#c8f169]">
       <header className="flex items-start justify-between gap-4 border-b border-[#dfe5df] p-5 sm:gap-6 sm:p-6">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">
             Senior review{demo ? " · Sample / Demo mode" : " · GPT-5.6"}
           </p>
           <h2 className="mt-2 text-2xl font-semibold">Your review is ready.</h2>
@@ -241,7 +241,7 @@ function HighlightList({
   const visibleItems = items.length ? items : [empty];
   return (
     <section className="border border-[#dfe5df] bg-[#fafbf8] p-4">
-      <h3 className={tone === "good" ? "font-semibold text-[#678616]" : "font-semibold text-[#9a5137]"}>{title}</h3>
+      <h3 className={tone === "good" ? "font-semibold text-[#5e7a17]" : "font-semibold text-[#9a5137]"}>{title}</h3>
       <ul className="mt-2 space-y-1.5 text-sm leading-6 text-[#5d6c66]">
         {visibleItems.map((item, index) => <li key={item + index} className="flex gap-2"><span>—</span><span>{item}</span></li>)}
       </ul>
@@ -262,7 +262,7 @@ function ReviewList({
   tone: "good" | "warn" | "neutral";
   empty: string;
 }) {
-  const color = tone === "good" ? "text-[#678616]" : tone === "warn" ? "text-[#b45f3e]" : "text-[#52615b]";
+  const color = tone === "good" ? "text-[#5e7a17]" : tone === "warn" ? "text-[#b45f3e]" : "text-[#52615b]";
   const visibleItems = items.length ? items : [empty];
   return (
     <section>

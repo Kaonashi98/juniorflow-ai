@@ -125,7 +125,7 @@ export function ProfileForm() {
   }
 
   const fieldClass =
-    "mt-2 min-h-12 w-full border border-[#cbd4cc] bg-white px-3.5 text-[#14261f] transition-colors placeholder:text-[#98a29e] hover:border-[#84958c] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40";
+    "mt-2 min-h-12 w-full border border-[#cbd4cc] bg-white px-3.5 text-[#14261f] transition-colors placeholder:text-[#6a766f] hover:border-[#84958c] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40";
 
   return (
     <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
@@ -134,16 +134,16 @@ export function ProfileForm() {
           <div className="border-b border-[#e1e6e1] p-6 sm:p-8">
             <div className="mb-7 flex items-center gap-3">
               <span className="flex size-10 items-center justify-center bg-[#eef8d6] text-[#5e7a17]"><UserRound aria-hidden="true" size={20} /></span>
-              <div><p className="text-sm text-[#728079]">Step 1 of 1</p><h2 className="text-xl font-semibold">Your developer profile</h2></div>
+              <div><p className="text-sm text-[#66736d]">Step 1 of 1</p><h2 className="text-xl font-semibold">Your developer profile</h2></div>
             </div>
             <fieldset>
               <legend className="text-sm font-semibold">What role are you practicing?</legend>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {ROLE_OPTIONS.map((role) => (
-                  <label key={role} className={`relative cursor-pointer border p-4 transition-colors ${selectedRole === role ? "border-[#14261f] bg-[#f4f7ed]" : "border-[#d8dfd9] hover:border-[#99a79f]"}`}>
+                  <label key={role} className={`relative cursor-pointer border p-4 transition-colors focus-within:ring-2 focus-within:ring-[#5e7a17] focus-within:ring-offset-2 ${selectedRole === role ? "border-[#14261f] bg-[#f4f7ed]" : "border-[#d8dfd9] hover:border-[#99a79f]"}`}>
                     <input className="sr-only" type="radio" name="role" value={role} checked={selectedRole === role} onChange={() => setSelectedRole(role)} />
                     <span className="flex items-start justify-between gap-3">
-                      <span><span className="block font-semibold">{role}</span><span className="mt-1 block text-sm text-[#718079]">{roleDescriptions[role]}</span></span>
+                      <span><span className="block font-semibold">{role}</span><span className="mt-1 block text-sm text-[#66736d]">{roleDescriptions[role]}</span></span>
                       {selectedRole === role && <span className="flex size-5 items-center justify-center bg-[#c8f169]"><Check aria-hidden="true" size={14} /></span>}
                     </span>
                   </label>
@@ -155,17 +155,17 @@ export function ProfileForm() {
           <div className="space-y-7 p-6 sm:p-8">
             <div className="grid gap-6 sm:grid-cols-2">
               <label className="block text-sm font-semibold">
-                <span className="flex items-center gap-2"><PanelsTopLeft aria-hidden="true" size={16} className="text-[#678616]" />Experience</span>
+                <span className="flex items-center gap-2"><PanelsTopLeft aria-hidden="true" size={16} className="text-[#5e7a17]" />Experience</span>
                 <select name="experience" className={fieldClass} defaultValue="6–12 months">{EXPERIENCE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
               </label>
               <label className="block text-sm font-semibold">
-                <span className="flex items-center gap-2"><Clock3 aria-hidden="true" size={16} className="text-[#678616]" />Time available</span>
+                <span className="flex items-center gap-2"><Clock3 aria-hidden="true" size={16} className="text-[#5e7a17]" />Time available</span>
                 <select name="availableTime" className={fieldClass} defaultValue="2 hours">{TIME_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
               </label>
             </div>
 
             <fieldset>
-              <legend className="flex items-center gap-2 text-sm font-semibold"><Code2 aria-hidden="true" size={16} className="text-[#678616]" />Technologies <span className="font-normal text-[#829089]">(choose up to 5)</span></legend>
+              <legend className="flex items-center gap-2 text-sm font-semibold"><Code2 aria-hidden="true" size={16} className="text-[#5e7a17]" />Technologies <span className="font-normal text-[#66736d]">(choose up to 5)</span></legend>
               <div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
                 {TECHNOLOGY_OPTIONS.map((technology) => {
                   const selected = technologies.includes(technology);
@@ -178,9 +178,9 @@ export function ProfileForm() {
               </div>
               <div className="mt-4 border-t border-[#e1e6e1] pt-4">
                 <label htmlFor="custom-technologies" className="block text-sm font-semibold">
-                  Other technologies <span className="font-normal text-[#829089]">(optional)</span>
+                  Other technologies <span className="font-normal text-[#66736d]">(optional)</span>
                 </label>
-                <p id="custom-technologies-help" className="mt-1 text-sm leading-6 text-[#74817b]">
+                <p id="custom-technologies-help" className="mt-1 text-sm leading-6 text-[#66736d]">
                   Add technologies that are not listed above, separated by commas.
                 </p>
                 <input
@@ -200,21 +200,21 @@ export function ProfileForm() {
                     {customError && <p className="text-sm text-[#a34235]" role="alert">{customError}</p>}
                     {!customError && combinedTechnologies.length === 0 && <p className="text-sm text-[#a34235]" role="alert">Choose or add at least one technology.</p>}
                   </div>
-                  <span id="custom-technologies-count" className="shrink-0 text-xs text-[#8a9690]">{customTechnologies.length}/150</span>
+                  <span id="custom-technologies-count" className="shrink-0 text-xs text-[#66736d]">{customTechnologies.length}/150</span>
                 </div>
               </div>
             </fieldset>
 
             <label className="block text-sm font-semibold">
-              <span className="flex items-center gap-2"><Languages aria-hidden="true" size={16} className="text-[#678616]" />Ticket language</span>
+              <span className="flex items-center gap-2"><Languages aria-hidden="true" size={16} className="text-[#5e7a17]" />Ticket language</span>
               <select name="language" className={fieldClass} defaultValue="English">{LANGUAGE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
             </label>
 
             <label className="block text-sm font-semibold">
               Project description
-              <span className="mt-1 block font-normal leading-6 text-[#74817b]">Describe the product or codebase your ticket should belong to.</span>
+              <span className="mt-1 block font-normal leading-6 text-[#66736d]">Describe the product or codebase your ticket should belong to.</span>
               <textarea name="projectDescription" required minLength={20} maxLength={800} rows={5} className={`${fieldClass} py-3`} defaultValue="A project-management dashboard for small remote teams. Users can create projects, invite teammates, and track tasks." />
-              <span className="mt-1 block text-right text-xs font-normal text-[#8a9690]">20–800 characters</span>
+              <span className="mt-1 block text-right text-xs font-normal text-[#66736d]">20–800 characters</span>
             </label>
 
             {error && (
@@ -231,14 +231,14 @@ export function ProfileForm() {
         </div>
 
         <aside className="border border-[#d5ddd6] bg-[#eef1e9] p-5 lg:sticky lg:top-24">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">Ticket setup</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">Ticket setup</p>
           <dl className="mt-5 space-y-4 text-sm">
-            <div><dt className="text-[#718079]">Role</dt><dd className="mt-1 font-semibold">{selectedRole}</dd></div>
-            <div><dt className="text-[#718079]">Stack</dt><dd className="mt-1 font-semibold">{combinedTechnologies.length ? combinedTechnologies.join(", ") : "Not selected"}</dd></div>
-            <div><dt className="text-[#718079]">AI model</dt><dd className="mt-1 font-semibold">GPT-5.6</dd></div>
+            <div><dt className="text-[#66736d]">Role</dt><dd className="mt-1 font-semibold">{selectedRole}</dd></div>
+            <div><dt className="text-[#66736d]">Stack</dt><dd className="mt-1 font-semibold">{combinedTechnologies.length ? combinedTechnologies.join(", ") : "Not selected"}</dd></div>
+            <div><dt className="text-[#66736d]">AI model</dt><dd className="mt-1 font-semibold">GPT-5.6</dd></div>
           </dl>
           <div className="mt-6 border-t border-[#d5ddd6] pt-5">
-            <p className="mb-4 text-xs leading-5 text-[#718079]">Your profile is sent securely to the server. The API key never reaches the browser.</p>
+            <p className="mb-4 text-xs leading-5 text-[#66736d]">Your profile is sent securely to the server. The API key never reaches the browser.</p>
             <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
               {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />GPT-5.6 is creating…</> : <>Generate my ticket <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
