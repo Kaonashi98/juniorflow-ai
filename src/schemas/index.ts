@@ -237,6 +237,8 @@ export const ticketSubmissionSchema = z
 
 export const reviewInputSchema = z
   .object({
+    sessionId: z.string().uuid(),
+    submissionRevision: z.number().int().min(0).max(10_000),
     ticket: generatedTicketSchema,
     submissionType: submissionTypeSchema,
     approach: ticketSubmissionSchema.shape.approach,
@@ -273,6 +275,7 @@ export const historyStatusSchema = z.enum([
 export const historyEntrySchema = z
   .object({
     id: z.string().uuid(),
+    submissionRevision: z.number().int().min(0).max(10_000).default(0),
     profile: profileInputSchema,
     ticket: workTicketSchema,
     status: historyStatusSchema,

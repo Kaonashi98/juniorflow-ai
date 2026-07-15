@@ -44,6 +44,7 @@ export const DEMO_TICKET: WorkTicket = {
 export const DEMO_HISTORY: HistoryEntry[] = [
   {
     id: "00000000-0000-4000-8000-000000000001",
+    submissionRevision: 0,
     profile: {
       role: "Front-End",
       experience: "6–12 months",

@@ -9,6 +9,7 @@ import type { ApiErrorPayload } from "@/schemas";
 export type ApiErrorCode =
   | "CONFIGURATION_ERROR"
   | "INVALID_INPUT"
+  | "DUPLICATE_REVIEW"
   | "UNAUTHORIZED"
   | "INSUFFICIENT_CREDIT"
   | "RATE_LIMITED"

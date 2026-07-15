@@ -219,6 +219,8 @@ describe("shared Zod schemas", () => {
 
   it("accepts pseudocode and working-code review submissions", () => {
     const baseSubmission = {
+      sessionId: "00000000-0000-4000-8000-000000000020",
+      submissionRevision: 0,
       ticket: generatedTicket,
       approach: "A sufficiently detailed approach to solve this task.",
       code: "Check the request state, then render the matching UI branch.",
@@ -243,6 +245,8 @@ describe("shared Zod schemas", () => {
   it("rejects an invalid submission type", () => {
     expect(
       reviewInputSchema.safeParse({
+        sessionId: "00000000-0000-4000-8000-000000000020",
+        submissionRevision: 0,
         ticket: generatedTicket,
         submissionType: "Draft",
         approach: "A sufficiently detailed approach to solve this task.",
@@ -270,6 +274,8 @@ describe("shared Zod schemas", () => {
   it("rejects review input with excessive code", () => {
     expect(
       reviewInputSchema.safeParse({
+        sessionId: "00000000-0000-4000-8000-000000000020",
+        submissionRevision: 0,
         ticket: generatedTicket,
         submissionType: "Working code",
         approach: "A sufficiently detailed approach to solve this task.",

@@ -15,12 +15,12 @@ import {
   Lightbulb,
   ShieldCheck,
   Target,
-  TrendingUp,
 } from "lucide-react";
 import type { SeniorReview, TicketSubmission } from "@/types";
 
 const REVIEW_TABS = [
   { id: "overview", label: "Overview" },
+  { id: "strengths", label: "Strengths & priorities" },
   { id: "technical", label: "Technical review" },
   { id: "acceptance", label: "Acceptance criteria" },
   { id: "learning", label: "Learning plan" },
@@ -71,47 +71,23 @@ export function SeniorReviewCard({
 
   return (
     <article className="border border-[#14261f] bg-white shadow-[6px_6px_0_#c8f169]">
-      <header className="border-b border-[#dfe5df] p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4 sm:gap-6">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">
-              Senior review{demo ? " · Sample / Demo mode" : " · GPT-5.6"}
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold">Your review is ready.</h2>
-            <p className="mt-2 inline-flex bg-[#eef1e9] px-2.5 py-1 text-xs font-semibold text-[#52615b]">
-              {submissionType}
-            </p>
-          </div>
-          <div className="flex size-20 shrink-0 flex-col items-center justify-center bg-[#14261f] text-white">
-            <span className="text-2xl font-bold">{review.overallScore}</span>
-            <span className="text-[10px] uppercase tracking-wide">/ 100</span>
-          </div>
+      <header className="flex items-start justify-between gap-4 border-b border-[#dfe5df] p-5 sm:gap-6 sm:p-6">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">
+            Senior review{demo ? " · Sample / Demo mode" : " · GPT-5.6"}
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">Your review is ready.</h2>
         </div>
-
-        <p className="mt-5 whitespace-pre-wrap leading-7 text-[#52615b]">
-          {review.approachAssessment}
-        </p>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <HighlightList
-            title="Top strengths"
-            items={review.strengths.slice(0, 3)}
-            empty="No specific strengths were identified."
-            tone="good"
-          />
-          <HighlightList
-            title="Improvement priorities"
-            items={review.improvements.slice(0, 3)}
-            empty="No immediate improvements were identified."
-            tone="warn"
-          />
+        <div className="flex size-20 shrink-0 flex-col items-center justify-center bg-[#14261f] text-white">
+          <span className="text-2xl font-bold">{review.overallScore}</span>
+          <span className="text-[10px] uppercase tracking-wide">/ 100</span>
         </div>
       </header>
 
       <div
         role="tablist"
         aria-label="Senior review sections"
-        className="flex overflow-x-auto border-b border-[#dfe5df] bg-[#f7f9f4] px-1 sm:px-2"
+        className="flex overflow-x-auto border-b border-[#dfe5df] bg-[#f7f9f4] px-1 sm:grid sm:grid-cols-5 sm:overflow-x-visible sm:px-2"
       >
         {REVIEW_TABS.map((tab, index) => {
           const selected = activeTab === tab.id;
@@ -132,7 +108,7 @@ export function SeniorReviewCard({
               onClick={() => setActiveTab(tab.id)}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
               className={
-                "min-h-12 shrink-0 border-b-2 px-2 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-inset sm:px-3 " +
+                "min-h-12 shrink-0 border-b-2 px-2 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-inset sm:min-w-0 sm:px-1 " +
                 (selected
                   ? "border-[#678616] text-[#14261f]"
                   : "border-transparent text-[#64736d] hover:text-[#14261f]")
@@ -145,9 +121,38 @@ export function SeniorReviewCard({
       </div>
 
       <ReviewPanel instanceId={instanceId} id="overview" activeTab={activeTab}>
-        <div className="grid gap-7 md:grid-cols-2">
-          <ReviewList icon={CheckCircle2} title="What you did well" items={review.strengths} tone="good" empty="No specific strengths were identified." />
-          <ReviewList icon={TrendingUp} title="How to improve" items={review.improvements} tone="neutral" empty="No immediate improvements were identified." />
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="bg-[#eef1e9] px-2.5 py-1 text-xs font-semibold text-[#52615b]">
+              {submissionType}
+            </span>
+            <span className="text-sm font-semibold text-[#52615b]">
+              Overall score: {review.overallScore}/100
+            </span>
+          </div>
+          <section>
+            <h3 className="font-semibold text-[#52615b]">Review summary</h3>
+            <p className="mt-3 whitespace-pre-wrap leading-7 text-[#52615b]">
+              {review.approachAssessment}
+            </p>
+          </section>
+        </div>
+      </ReviewPanel>
+
+      <ReviewPanel instanceId={instanceId} id="strengths" activeTab={activeTab}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <HighlightList
+            title="Top strengths"
+            items={review.strengths}
+            empty="No specific strengths were identified."
+            tone="good"
+          />
+          <HighlightList
+            title="Improvement priorities"
+            items={review.improvements}
+            empty="No immediate improvements were identified."
+            tone="warn"
+          />
         </div>
       </ReviewPanel>
 

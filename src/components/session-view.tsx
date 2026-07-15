@@ -13,6 +13,21 @@ import type { HistoryEntry, SeniorReview, TicketSubmission } from "@/types";
 import { SolutionWorkspace } from "@/components/solution-workspace";
 import { TicketDetails } from "@/components/ticket-details";
 
+export function applyReviewEditDecision(
+  entry: HistoryEntry,
+  confirmed: boolean,
+  savedAt = new Date().toISOString(),
+): HistoryEntry {
+  if (!confirmed) return entry;
+  const { review: _review, ...withoutReview } = entry;
+  void _review;
+  return {
+    ...withoutReview,
+    submissionRevision: entry.submissionRevision + 1,
+    status: "solution-draft",
+    savedAt,
+  };
+}
 export function SessionView({ id }: { id: string }) {
   const [entry, setEntry] = useState<HistoryEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,6 +67,10 @@ export function SessionView({ id }: { id: string }) {
     });
   }
 
+  function editSubmission() {
+    if (!entry) return;
+    persist(applyReviewEditDecision(entry, true));
+  }
   if (isLoading) {
     return <main className="flex flex-1 items-center justify-center py-24"><LoaderCircle aria-hidden="true" className="animate-spin text-[#678616]" /><span className="sr-only">Loading saved ticket</span></main>;
   }
@@ -93,11 +112,14 @@ export function SessionView({ id }: { id: string }) {
       <div className="mx-auto grid max-w-7xl gap-7 px-5 py-8 sm:px-8 sm:py-12 xl:grid-cols-[minmax(0,1.16fr)_minmax(380px,0.84fr)] xl:items-start">
         <TicketDetails ticket={entry.ticket} />
         <SolutionWorkspace
+          sessionId={entry.id}
+          submissionRevision={entry.submissionRevision}
           ticket={entry.ticket}
           initialSubmission={entry.submission}
           initialReview={entry.review}
           onSubmission={saveSubmission}
           onReview={saveReview}
+          onEditSubmission={editSubmission}
         />
       </div>
     </main>

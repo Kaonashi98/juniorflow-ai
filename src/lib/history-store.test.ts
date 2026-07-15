@@ -12,6 +12,7 @@ import {
 import { profileInputSchema, type ProfileInput } from "@/schemas";
 import { STORAGE_KEY } from "@/lib/constants";
 import { DEMO_TICKET } from "@/data/demo-ticket";
+import { DEMO_REVIEW } from "@/data/demo-review";
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -71,6 +72,7 @@ describe("versioned history storage", () => {
     expect(parsed?.version).toBe(1);
     expect(parsed?.entries[0]?.profile.customTechnologies).toBeUndefined();
     expect(parsed?.entries[0]?.profile.predefinedTechnologies).toBeUndefined();
+    expect(parsed?.entries[0]?.submissionRevision).toBe(0);
   });
 
   it("persists the sanitized combined stack for new profile entries", () => {
@@ -106,18 +108,25 @@ describe("versioned history storage", () => {
       difficulties: "",
       seniorQuestion: "",
     };
+    const { submissionRevision: _submissionRevision, ...legacyEntry } = entry;
+    void _submissionRevision;
     const serialized = JSON.stringify({
       version: 1,
       entries: [{
-        ...entry,
-        status: "solution-draft",
+        ...legacyEntry,
+        status: "reviewed",
         submission: legacySubmission,
+        review: DEMO_REVIEW,
       }],
     });
 
     const parsed = parseHistory(serialized);
+    expect(parsed?.entries[0]?.submissionRevision).toBe(0);
     expect(parsed?.entries[0]?.submission?.submissionType).toBe(
       "Pseudocode / technical plan",
+    );
+    expect(parsed?.entries[0]?.review?.overallScore).toBe(
+      DEMO_REVIEW.overallScore,
     );
   });
   it("isolates corrupted data and recovers safely", () => {
