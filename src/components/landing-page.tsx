@@ -16,7 +16,7 @@ export function LandingPage() {
     <main>
       <section className="relative overflow-hidden border-b border-[#dce2dc]">
         <div className="dot-grid absolute inset-y-0 right-0 hidden w-[42%] opacity-70 lg:block" />
-        <div className="relative mx-auto grid max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-32">
+        <div className="relative mx-auto grid max-w-7xl gap-14 px-5 pb-20 pt-8 sm:px-8 sm:pb-24 sm:pt-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:pb-28">
           <div>
             <Image src="/branding/juniorflow-ai-brand.png" alt={copy.logoAlt} width={1536} height={1024} priority className="mb-6 h-24 w-auto border border-[#d5ddd6] object-cover shadow-[5px_5px_0_#c8f169]" />
             <div className="mb-7 inline-flex items-center gap-2 border border-[#c9d2c9] bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#52615b]"><Sparkles aria-hidden="true" size={14} className="text-[#5e7a17]" />{copy.badge}</div>
