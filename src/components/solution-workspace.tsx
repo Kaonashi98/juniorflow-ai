@@ -31,6 +31,7 @@ import type {
   WorkTicket,
 } from "@/types";
 import { SeniorReviewCard } from "@/components/senior-review-card";
+import { useAccess, useLanguage } from "@/components/app-providers";
 
 const reviewResponseSchema = z.object({ review: seniorReviewSchema });
 
@@ -87,6 +88,31 @@ export function SolutionWorkspace({
   onReview?: (submission: TicketSubmission, review: SeniorReview) => void;
   onEditSubmission?: () => void;
 }) {
+  const { unlocked, openUnlock } = useAccess();
+  const { t, locale } = useLanguage();
+  const solutionCopy = locale === "it"
+    ? {
+        approach: "Il tuo approccio",
+        approachHelp: "Descrivi il ragionamento, i passaggi e le scelte che useresti per risolvere il ticket.",
+        type: "Tipo di consegna",
+        planHelp: "Pseudocodice / piano tecnico: un piano chiaro che non deve compilare. Codice funzionante: implementazione concreta valutata più severamente.",
+        code: "Codice o pseudocodice",
+        difficult: "Cosa è stato difficile?",
+        difficultHelp: "Indica dubbi, ostacoli e punti su cui non eri sicuro.",
+        question: "Domanda per il senior",
+        questionHelp: "Fai una domanda tecnica specifica su cui vuoi ricevere aiuto.",
+      }
+    : {
+        approach: "Your approach",
+        approachHelp: "Describe the reasoning, steps, and choices you would use to solve the ticket.",
+        type: "Submission type",
+        planHelp: "Pseudocode / technical plan is a clear plan that does not need to compile. Working code is concrete code reviewed more strictly.",
+        code: "Code or pseudocode",
+        difficult: "What was difficult?",
+        difficultHelp: "Describe the doubts, blockers, or decisions you were unsure about.",
+        question: "Question for your senior",
+        questionHelp: "Ask one specific technical question where you want guidance.",
+      };
   const initialSubmissionType =
     initialSubmission?.submissionType ?? "Pseudocode / technical plan";
   const [submissionType, setSubmissionType] =
@@ -138,6 +164,11 @@ export function SolutionWorkspace({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
+    if (!unlocked) {
+      openUnlock();
+      setError(new ClientApiError(t("profile.unlockRequired"), "ACCESS_REQUIRED", false));
+      return;
+    }
 
     if (review) {
       setError(new ClientApiError(
@@ -235,7 +266,7 @@ export function SolutionWorkspace({
           </p>
         </header>
         <div className="space-y-6 p-6">
-          <label className="block text-sm font-semibold">Your approach
+          <label className="block text-sm font-semibold">{solutionCopy.approach}<span className="mt-1 block font-normal leading-5 text-[#66736d]">{solutionCopy.approachHelp}</span>
             <textarea
               name="approach"
               required
@@ -251,7 +282,7 @@ export function SolutionWorkspace({
           </label>
 
           <fieldset disabled={hasReview}>
-            <legend className="text-sm font-semibold">Submission type</legend>
+            <legend className="text-sm font-semibold">{solutionCopy.type}</legend>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {SUBMISSION_TYPES.map((option) => (
                 <label
@@ -280,11 +311,11 @@ export function SolutionWorkspace({
               ))}
             </div>
             <p className="mt-2 text-xs leading-5 text-[#66736d]">
-              Plans are scored on reasoning and coverage; working code is also reviewed for implementation quality.
+              {solutionCopy.planHelp}
             </p>
           </fieldset>
 
-          <label className="block text-sm font-semibold">Code or pseudocode
+          <label className="block text-sm font-semibold">{solutionCopy.code}
             <textarea
               name="code"
               required
@@ -299,7 +330,7 @@ export function SolutionWorkspace({
               placeholder="// Paste code or write clear pseudocode here"
             />
           </label>
-          <label className="block text-sm font-semibold">What was difficult?
+          <label className="block text-sm font-semibold">{solutionCopy.difficult}<span className="mt-1 block font-normal leading-5 text-[#66736d]">{solutionCopy.difficultHelp}</span>
             <textarea
               name="difficulties"
               readOnly={hasReview}
@@ -311,7 +342,7 @@ export function SolutionWorkspace({
               placeholder="Tell your senior where you felt unsure…"
             />
           </label>
-          <label className="block text-sm font-semibold"><span className="flex items-center gap-2"><MessageCircleQuestion aria-hidden="true" size={17} className="text-[#5e7a17]" />Question for your senior</span>
+          <label className="block text-sm font-semibold"><span className="flex items-center gap-2"><MessageCircleQuestion aria-hidden="true" size={17} className="text-[#5e7a17]" />{solutionCopy.question}</span><span className="mt-1 block font-normal leading-5 text-[#66736d]">{solutionCopy.questionHelp}</span>
             <textarea
               name="seniorQuestion"
               readOnly={hasReview}

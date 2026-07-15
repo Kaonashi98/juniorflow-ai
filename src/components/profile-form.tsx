@@ -32,8 +32,19 @@ import {
   profileInputSchema,
 } from "@/schemas";
 import type { DeveloperRole } from "@/types";
+import { useAccess, useLanguage } from "@/components/app-providers";
 
 const ticketResponseSchema = z.object({ ticket: generatedTicketSchema });
+
+export const GUIDED_PROFILE_EXAMPLE = {
+  role: "Full-Stack" as DeveloperRole,
+  experience: "Junior with internship experience",
+  technologies: ["TypeScript", "React", "Node.js", "REST APIs", "PostgreSQL"],
+  customTechnologies: "Docker",
+  availableTime: "2 hours",
+  language: "English",
+  projectDescription: "A project-management dashboard for small remote teams. Users can create projects, invite teammates, and track tasks.",
+};
 
 const roleDescriptions: Record<DeveloperRole, string> = {
   "Front-End": "Interfaces and web experiences",
@@ -44,9 +55,15 @@ const roleDescriptions: Record<DeveloperRole, string> = {
 
 export function ProfileForm() {
   const router = useRouter();
+  const { t } = useLanguage();
+  const { unlocked, openUnlock } = useAccess();
   const [selectedRole, setSelectedRole] = useState<DeveloperRole>("Front-End");
   const [technologies, setTechnologies] = useState<string[]>(["React", "TypeScript"]);
   const [customTechnologies, setCustomTechnologies] = useState("");
+  const [experience, setExperience] = useState("6–12 months");
+  const [availableTime, setAvailableTime] = useState("2 hours");
+  const [ticketLanguage, setTicketLanguage] = useState("English");
+  const [projectDescription, setProjectDescription] = useState(GUIDED_PROFILE_EXAMPLE.projectDescription);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ClientApiError | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -76,9 +93,25 @@ export function ProfileForm() {
     );
   }
 
+  function applyGuidedExample() {
+    setSelectedRole(GUIDED_PROFILE_EXAMPLE.role);
+    setExperience(GUIDED_PROFILE_EXAMPLE.experience);
+    setTechnologies(GUIDED_PROFILE_EXAMPLE.technologies);
+    setCustomTechnologies(GUIDED_PROFILE_EXAMPLE.customTechnologies);
+    setAvailableTime(GUIDED_PROFILE_EXAMPLE.availableTime);
+    setTicketLanguage(GUIDED_PROFILE_EXAMPLE.language);
+    setProjectDescription(GUIDED_PROFILE_EXAMPLE.projectDescription);
+    setError(null);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
+    if (!unlocked) {
+      openUnlock();
+      setError(new ClientApiError(t("profile.unlockRequired"), "ACCESS_REQUIRED", false));
+      return;
+    }
 
     const formData = new FormData(event.currentTarget);
     const candidate = {
@@ -130,14 +163,18 @@ export function ProfileForm() {
   return (
     <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
       <form ref={formRef} onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
+        <div className="lg:col-span-2 flex flex-col gap-2 border border-[#dbe5c6] bg-[#f5f8ef] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="text-sm font-semibold">{t("profile.example")}</p><p className="mt-1 text-xs text-[#66736d]">{t("profile.exampleHelp")}</p></div>
+          <button type="button" onClick={applyGuidedExample} className="min-h-10 shrink-0 border border-[#14261f] bg-white px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-[#678616] focus-visible:ring-offset-2">{t("profile.example")}</button>
+        </div>
         <div className="border border-[#d5ddd6] bg-white">
           <div className="border-b border-[#e1e6e1] p-6 sm:p-8">
             <div className="mb-7 flex items-center gap-3">
               <span className="flex size-10 items-center justify-center bg-[#eef8d6] text-[#5e7a17]"><UserRound aria-hidden="true" size={20} /></span>
-              <div><p className="text-sm text-[#66736d]">Step 1 of 1</p><h2 className="text-xl font-semibold">Your developer profile</h2></div>
+              <div><p className="text-sm text-[#66736d]">{t("profile.step")}</p><h2 className="text-xl font-semibold">{t("profile.title")}</h2></div>
             </div>
             <fieldset>
-              <legend className="text-sm font-semibold">What role are you practicing?</legend>
+              <legend className="text-sm font-semibold">{t("profile.role")}</legend>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {ROLE_OPTIONS.map((role) => (
                   <label key={role} className={`relative cursor-pointer border p-4 transition-colors focus-within:ring-2 focus-within:ring-[#5e7a17] focus-within:ring-offset-2 ${selectedRole === role ? "border-[#14261f] bg-[#f4f7ed]" : "border-[#d8dfd9] hover:border-[#99a79f]"}`}>
@@ -155,17 +192,17 @@ export function ProfileForm() {
           <div className="space-y-7 p-6 sm:p-8">
             <div className="grid gap-6 sm:grid-cols-2">
               <label className="block text-sm font-semibold">
-                <span className="flex items-center gap-2"><PanelsTopLeft aria-hidden="true" size={16} className="text-[#5e7a17]" />Experience</span>
-                <select name="experience" className={fieldClass} defaultValue="6–12 months">{EXPERIENCE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
+                <span className="flex items-center gap-2"><PanelsTopLeft aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.experience")}</span>
+                <select name="experience" className={fieldClass} value={experience} onChange={(event) => setExperience(event.target.value)}>{EXPERIENCE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select><span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.experienceHelp")}</span>
               </label>
               <label className="block text-sm font-semibold">
-                <span className="flex items-center gap-2"><Clock3 aria-hidden="true" size={16} className="text-[#5e7a17]" />Time available</span>
-                <select name="availableTime" className={fieldClass} defaultValue="2 hours">{TIME_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
+                <span className="flex items-center gap-2"><Clock3 aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.time")}</span>
+                <select name="availableTime" className={fieldClass} value={availableTime} onChange={(event) => setAvailableTime(event.target.value)}>{TIME_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select><span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.timeHelp")}</span>
               </label>
             </div>
 
             <fieldset>
-              <legend className="flex items-center gap-2 text-sm font-semibold"><Code2 aria-hidden="true" size={16} className="text-[#5e7a17]" />Technologies <span className="font-normal text-[#66736d]">(choose up to 5)</span></legend>
+              <legend className="flex items-center gap-2 text-sm font-semibold"><Code2 aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.technologies")} <span className="font-normal text-[#66736d]">({t("profile.chooseFive")})</span></legend>
               <div className="mt-3 flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
                 {TECHNOLOGY_OPTIONS.map((technology) => {
                   const selected = technologies.includes(technology);
@@ -178,7 +215,7 @@ export function ProfileForm() {
               </div>
               <div className="mt-4 border-t border-[#e1e6e1] pt-4">
                 <label htmlFor="custom-technologies" className="block text-sm font-semibold">
-                  Other technologies <span className="font-normal text-[#66736d]">(optional)</span>
+                  {t("profile.other")} <span className="font-normal text-[#66736d]">({t("profile.optional")})</span>
                 </label>
                 <p id="custom-technologies-help" className="mt-1 text-sm leading-6 text-[#66736d]">
                   Add technologies that are not listed above, separated by commas.
@@ -206,14 +243,15 @@ export function ProfileForm() {
             </fieldset>
 
             <label className="block text-sm font-semibold">
-              <span className="flex items-center gap-2"><Languages aria-hidden="true" size={16} className="text-[#5e7a17]" />Ticket language</span>
-              <select name="language" className={fieldClass} defaultValue="English">{LANGUAGE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
+              <span className="flex items-center gap-2"><Languages aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.ticketLanguage")}</span>
+              <select name="language" className={fieldClass} value={ticketLanguage} onChange={(event) => setTicketLanguage(event.target.value)}>{LANGUAGE_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select>
+              <span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.interfaceVsTicket")}</span>
             </label>
 
             <label className="block text-sm font-semibold">
-              Project description
-              <span className="mt-1 block font-normal leading-6 text-[#66736d]">Describe the product or codebase your ticket should belong to.</span>
-              <textarea name="projectDescription" required minLength={20} maxLength={800} rows={5} className={`${fieldClass} py-3`} defaultValue="A project-management dashboard for small remote teams. Users can create projects, invite teammates, and track tasks." />
+              {t("profile.project")}
+              <span className="mt-1 block font-normal leading-6 text-[#66736d]">{t("profile.projectHelp")}</span>
+              <textarea name="projectDescription" required minLength={20} maxLength={800} rows={5} className={`${fieldClass} py-3`} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} />
               <span className="mt-1 block text-right text-xs font-normal text-[#66736d]">20–800 characters</span>
             </label>
 
@@ -231,16 +269,16 @@ export function ProfileForm() {
         </div>
 
         <aside className="border border-[#d5ddd6] bg-[#eef1e9] p-5 lg:sticky lg:top-24">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">Ticket setup</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7a17]">{t("profile.setup")}</p>
           <dl className="mt-5 space-y-4 text-sm">
             <div><dt className="text-[#66736d]">Role</dt><dd className="mt-1 font-semibold">{selectedRole}</dd></div>
             <div><dt className="text-[#66736d]">Stack</dt><dd className="mt-1 font-semibold">{combinedTechnologies.length ? combinedTechnologies.join(", ") : "Not selected"}</dd></div>
             <div><dt className="text-[#66736d]">AI model</dt><dd className="mt-1 font-semibold">GPT-5.6</dd></div>
           </dl>
           <div className="mt-6 border-t border-[#d5ddd6] pt-5">
-            <p className="mb-4 text-xs leading-5 text-[#66736d]">Your profile is sent securely to the server. The API key never reaches the browser.</p>
+            <p className="mb-4 text-xs leading-5 text-[#66736d]">{t("profile.limited")}</p>
             <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
-              {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />GPT-5.6 is creating…</> : <>Generate my ticket <ArrowRight aria-hidden="true" size={18} /></>}
+              {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />GPT-5.6 is creating…</> : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
           </div>
         </aside>

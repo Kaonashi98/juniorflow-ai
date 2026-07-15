@@ -4,6 +4,9 @@ import { errorResponse, PublicApiError } from "@/lib/api-errors";
 import { readJsonBody } from "@/lib/http";
 import { generateReview } from "@/lib/openai.server";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { rejectAutomatedRequest } from "@/lib/botid.server";
+import { requireAiAccess } from "@/lib/access.server";
+import { requireSameOrigin } from "@/lib/request-security";
 import {
   completeReviewReservation,
   releaseReviewReservation,
@@ -18,6 +21,9 @@ export async function POST(request: Request) {
   let ownsReservation = false;
 
   try {
+    await rejectAutomatedRequest();
+    requireSameOrigin(request);
+    requireAiAccess(request);
     enforceRateLimit(request, "reviews", 12);
     const body = await readJsonBody(request);
     const parsed = reviewInputSchema.safeParse(body);

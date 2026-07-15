@@ -4,11 +4,17 @@ import { errorResponse, PublicApiError } from "@/lib/api-errors";
 import { readJsonBody } from "@/lib/http";
 import { generateTicket } from "@/lib/openai.server";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { rejectAutomatedRequest } from "@/lib/botid.server";
+import { requireAiAccess } from "@/lib/access.server";
+import { requireSameOrigin } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    await rejectAutomatedRequest();
+    requireSameOrigin(request);
+    requireAiAccess(request);
     enforceRateLimit(request, "tickets", 8);
     const body = await readJsonBody(request);
     const parsed = profileInputSchema.safeParse(body);

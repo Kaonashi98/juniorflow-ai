@@ -21,6 +21,9 @@ JuniorFlow AI simulates that workflow without requiring an employer, mentor, acc
 
 ## Features
 
+- Official JuniorFlow AI branding and social preview metadata
+- Responsive English/Italian interface with browser detection and a persisted preference
+- Public five-step guide and guided profile example
 - Responsive landing page and guided profile configurator
 - Front-End, Back-End, Full-Stack, and Mobile paths, including internship experience
 - Up to five predefined and five custom technologies, deduplicated case-insensitively
@@ -30,6 +33,8 @@ JuniorFlow AI simulates that workflow without requiring an employer, mentor, acc
 - Duplicate-review protection and a confirmed edit-and-review-again workflow
 - Versioned History in `localStorage` with search, filters, reopening, and deletion
 - Separate static Demo mode that never calls OpenAI
+- Temporary access-code gate backed by an eight-hour signed HttpOnly cookie
+- Vercel BotID Basic protection for unlock, ticket, and review requests
 - Loading, error, empty, recovery, and not-found states
 - Responsive layouts, keyboard review tabs, and an accessible confirmation dialog
 
@@ -58,6 +63,7 @@ No database or authentication is used.
 - OpenAI JavaScript SDK and Responses API
 - GPT-5.6
 - Structured Outputs with Zod
+- Vercel BotID Basic
 - Vitest
 - `localStorage`
 - npm
@@ -123,13 +129,15 @@ On macOS or Linux:
 cp .env.example .env.local
 ```
 
-Set the server-only key:
+Set all server-only credentials:
 
 ```dotenv
-OPENAI_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+DEMO_ACCESS_CODE=your_temporary_demo_access_code
+APP_SESSION_SECRET=replace_with_at_least_32_random_characters
 ```
 
-Never prefix it with `NEXT_PUBLIC_`.
+Use a randomly generated secret of at least 32 characters for APP_SESSION_SECRET. Share the temporary judge code separately and never commit it. Never prefix credentials with NEXT_PUBLIC_.
 
 Start the application:
 
@@ -163,7 +171,7 @@ Accepts a strict bounded profile. Predefined technologies are limited to five, e
 
 Accepts a session ID, submission revision, generated ticket, delivery type, approach, code or pseudocode, difficulties, and senior question. It returns a validated structured review. Client state and a server-side revision reservation prevent accidental duplicates. Confirmed editing removes the old review, increments the revision, and preserves the ticket, profile, and submission text.
 
-Both endpoints reject oversized or malformed requests, apply per-instance rate limits, and return sanitized errors without provider details or stack traces.
+Both endpoints require a valid signed access session, same-origin request, and successful BotID Basic check before OpenAI can run. They reject oversized or malformed requests, apply per-instance rate limits, and return sanitized errors without provider details or stack traces.
 
 ## History and persistence
 
@@ -182,7 +190,10 @@ History is local to the current browser and is not synchronized across devices.
 
 ## Security and privacy
 
-- `OPENAI_API_KEY` is read only by a module marked `server-only`.
+- OPENAI_API_KEY, DEMO_ACCESS_CODE, and APP_SESSION_SECRET are server-only and never use a NEXT_PUBLIC_ prefix.
+- Access-code comparison uses fixed-length HMAC digests and constant-time comparison.
+- The browser receives only an HMAC-signed, expiring HttpOnly cookie; the access code is never stored in cookies or localStorage.
+- State-changing requests verify same origin, and protected AI routes use Vercel BotID Basic.
 - `.env.local` is ignored by Git; only `.env.example` is tracked.
 - No `NEXT_PUBLIC_OPENAI_API_KEY` variable is used.
 - Requests and model responses are strictly validated and length-limited.
@@ -218,7 +229,7 @@ No real OpenAI request is made by these commands.
 1. Push the repository to a Git provider.
 2. Import it into Vercel.
 3. Keep the detected Next.js settings.
-4. Add `OPENAI_API_KEY` in Project Settings > Environment Variables.
+4. Add OPENAI_API_KEY, DEMO_ACCESS_CODE, and APP_SESSION_SECRET in Project Settings > Environment Variables.
 5. Deploy.
 6. Smoke-test one real ticket and review.
 7. Verify Demo mode and History independently.
@@ -249,3 +260,20 @@ JuniorFlow AI participates in OpenAI Build Week 2026 in the **Education** catego
 ## License
 
 Released under the [MIT License](LICENSE).
+
+## Judge access
+
+Public pages, the bilingual guide, static demo, and browser-local History do not require a code. To evaluate live GPT-5.6 generation:
+
+1. Open **Unlock AI demo** in the global header.
+2. Enter the temporary code shared privately by the project owner.
+3. Generate a ticket and request a senior review within the eight-hour session.
+4. Use **Lock** in the header when finished.
+
+The code is verified only on the server. A valid unlock creates a signed HttpOnly cookie; it is not saved to browser storage.
+
+## Bot protection and recommended Vercel WAF rule
+
+BotID runs at the Basic level on POST /api/access/unlock, POST /api/tickets, and POST /api/reviews. The existing application-level per-instance limiter remains in place.
+
+As an additional deployment control, create a Vercel WAF rate-limit rule matching POST requests whose path matches ^/api/(access/unlock|tickets|reviews)$. A practical starting threshold for this temporary judged demo is 20 requests per IP in a 10-minute fixed window, initially observed in log mode before switching to a deny/429 action. Adjust it after reviewing legitimate traffic. WAF configuration is deployment-specific and is intentionally not stored in this repository.

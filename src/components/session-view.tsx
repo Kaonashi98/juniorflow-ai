@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, FileQuestion, HardDrive, LoaderCircle } from "lucide-react";
+import { useLanguage } from "@/components/app-providers";
 import {
   getHistoryEntry,
   upsertHistoryEntry,
@@ -28,14 +29,19 @@ export function applyReviewEditDecision(
     savedAt,
   };
 }
+export function resolveSavedSession(id: string, storage?: Storage) {
+  return getHistoryEntry(id, storage);
+}
+
 export function SessionView({ id }: { id: string }) {
+  const { t } = useLanguage();
   const [entry, setEntry] = useState<HistoryEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [storageError, setStorageError] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      setEntry(getHistoryEntry(id));
+      setEntry(resolveSavedSession(id));
       setIsLoading(false);
     }, 0);
     return () => window.clearTimeout(timeout);
@@ -72,16 +78,21 @@ export function SessionView({ id }: { id: string }) {
     persist(applyReviewEditDecision(entry, true));
   }
   if (isLoading) {
-    return <main className="flex flex-1 items-center justify-center py-24"><LoaderCircle aria-hidden="true" className="animate-spin text-[#5e7a17]" /><span className="sr-only">Loading saved ticket</span></main>;
+    return <main className="flex flex-1 items-center justify-center py-24"><LoaderCircle aria-hidden="true" className="animate-spin text-[#5e7a17]" /><span className="sr-only">{t("common.loading")}</span></main>;
   }
 
   if (!entry) {
     return (
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center px-5 py-20 text-center">
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-5 py-16 text-center">
         <span className="flex size-14 items-center justify-center bg-[#eef1e9]"><FileQuestion aria-hidden="true" size={26} /></span>
-        <h1 className="mt-6 text-3xl font-semibold tracking-tight">Saved ticket not found.</h1>
-        <p className="mt-3 leading-7 text-[#64736d]">It may have been removed or your browser storage may have been cleared.</p>
-        <Link href="/history" className="mt-7 inline-flex min-h-11 items-center gap-2 bg-[#14261f] px-5 font-semibold text-white"><ArrowLeft aria-hidden="true" size={17} />Back to history</Link>
+        <h1 className="mt-6 text-3xl font-semibold tracking-tight">{t("session.missing.title")}</h1>
+        <p className="mt-3 max-w-xl leading-7 text-[#64736d]">{t("session.missing.description")}</p>
+        <div className="mt-7 grid w-full gap-3 sm:grid-cols-2">
+          <Link href="/simulate" className="inline-flex min-h-11 items-center justify-center bg-[#14261f] px-5 font-semibold text-white">{t("session.new")}</Link>
+          <Link href="/demo" className="inline-flex min-h-11 items-center justify-center border border-[#14261f] px-5 font-semibold">{t("session.demo")}</Link>
+          <Link href="/history" className="inline-flex min-h-11 items-center justify-center border border-[#cbd4cc] px-5 font-semibold">{t("session.history")}</Link>
+          <Link href="/" className="inline-flex min-h-11 items-center justify-center gap-2 border border-[#cbd4cc] px-5 font-semibold"><ArrowLeft aria-hidden="true" size={17} />{t("session.home")}</Link>
+        </div>
       </main>
     );
   }
