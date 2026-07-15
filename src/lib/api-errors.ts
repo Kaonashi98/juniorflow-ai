@@ -1,4 +1,8 @@
 import OpenAI from "openai";
+import {
+  ContentFilterFinishReasonError,
+  LengthFinishReasonError,
+} from "openai/error";
 import { NextResponse } from "next/server";
 import type { ApiErrorPayload } from "@/schemas";
 
@@ -75,8 +79,8 @@ export function mapProviderError(error: unknown): PublicApiError {
   }
 
   if (
-    error instanceof OpenAI.LengthFinishReasonError ||
-    error instanceof OpenAI.ContentFilterFinishReasonError
+    error instanceof LengthFinishReasonError ||
+    error instanceof ContentFilterFinishReasonError
   ) {
     return new PublicApiError(
       "INVALID_MODEL_OUTPUT",

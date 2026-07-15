@@ -39,7 +39,7 @@ export function HistoryList() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="bg-[#c8f169] px-2 py-1 text-[10px] font-bold tracking-wide">DEMO RECORD</span>
-                    <span className="font-mono text-xs text-[#77847e]">{entry.ticket.id}</span>
+                    <span className="font-mono text-xs text-[#77847e]">{entry.ticket.ticketId}</span>
                   </div>
                   <h2 className="mt-3 text-xl font-semibold tracking-tight group-hover:text-[#526d14]">{entry.ticket.title}</h2>
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#718079]">

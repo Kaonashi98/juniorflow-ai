@@ -16,7 +16,7 @@ export default function DemoPage() {
       <div className="border-b border-[#dce2dc] bg-[#eef8d6]">
         <div className="mx-auto flex max-w-7xl items-start gap-3 px-5 py-3 text-sm text-[#476013] sm:items-center sm:px-8">
           <Info aria-hidden="true" size={17} className="mt-0.5 shrink-0 sm:mt-0" />
-          <p><strong>Demo experience.</strong> This ticket and review are sample data. AI generation will be connected in the next implementation phases.</p>
+          <p><strong>Sample ticket / Demo mode.</strong> This ticket and review are static sample data and never call the OpenAI API.</p>
         </div>
       </div>
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">

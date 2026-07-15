@@ -33,19 +33,6 @@ function getClient() {
   });
 }
 
-function responseWasRefused(response: {
-  output: Array<
-    | { type: "message"; content: Array<{ type: string }> }
-    | { type: string }
-  >;
-}) {
-  return response.output.some(
-    (item) =>
-      item.type === "message" &&
-      item.content.some((content) => content.type === "refusal"),
-  );
-}
-
 export async function generateTicket(profile: ProfileInput): Promise<GeneratedTicket> {
   const response = await getClient().responses.parse({
     model: MODEL,
@@ -69,7 +56,12 @@ export async function generateTicket(profile: ProfileInput): Promise<GeneratedTi
     },
   });
 
-  if (responseWasRefused(response)) {
+  const refused = response.output.some(
+    (item) =>
+      item.type === "message" &&
+      item.content.some((content) => content.type === "refusal"),
+  );
+  if (refused) {
     throw new PublicApiError(
       "MODEL_REFUSAL",
       "The AI service could not generate this ticket. Adjust the project description and retry.",
@@ -110,7 +102,12 @@ export async function generateReview(input: ReviewInput): Promise<SeniorReview> 
     },
   });
 
-  if (responseWasRefused(response)) {
+  const refused = response.output.some(
+    (item) =>
+      item.type === "message" &&
+      item.content.some((content) => content.type === "refusal"),
+  );
+  if (refused) {
     throw new PublicApiError(
       "MODEL_REFUSAL",
       "The AI service could not review this submission. Adjust the content and retry.",

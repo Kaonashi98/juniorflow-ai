@@ -1,7 +1,7 @@
 import type { HistoryEntry, WorkTicket } from "@/types";
 
 export const DEMO_TICKET: WorkTicket = {
-  id: "JF-2048",
+  ticketId: "JF-2048",
   title: "Add an empty state to the project dashboard",
   companyContext:
     "Flowdesk is a small project-management SaaS used by distributed product teams. New users currently land on a blank dashboard before creating their first project.",
@@ -25,7 +25,7 @@ export const DEMO_TICKET: WorkTicket = {
   difficulty: "Easy",
   estimatedTime: "60–90 minutes",
   technologies: ["React", "TypeScript", "Tailwind CSS"],
-  possibleFiles: [
+  likelyFiles: [
     "src/app/dashboard/page.tsx",
     "src/components/projects/empty-state.tsx",
     "src/components/projects/project-grid.test.tsx",
@@ -43,16 +43,17 @@ export const DEMO_TICKET: WorkTicket = {
 
 export const DEMO_HISTORY: HistoryEntry[] = [
   {
-    id: "history-demo-1",
+    id: "00000000-0000-4000-8000-000000000001",
     profile: {
       role: "Front-End",
       experience: "6–12 months",
       technologies: ["React", "TypeScript"],
       availableTime: "2 hours",
-      ticketLanguage: "English",
+      language: "English",
       projectDescription: "A project-management dashboard for small teams.",
     },
     ticket: DEMO_TICKET,
+    status: "ticket-generated",
     savedAt: "2026-07-15T08:30:00.000Z",
   },
 ];
