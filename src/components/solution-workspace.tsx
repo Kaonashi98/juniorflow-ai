@@ -5,11 +5,34 @@ import Link from "next/link";
 import { ArrowRight, LoaderCircle, MessageCircleQuestion, RotateCcw } from "lucide-react";
 import { z } from "zod";
 import { postJson, ClientApiError } from "@/lib/api-client";
-import { seniorReviewSchema, ticketSubmissionSchema } from "@/schemas";
-import type { SeniorReview, TicketSubmission, WorkTicket } from "@/types";
+import {
+  reviewInputSchema,
+  seniorReviewSchema,
+  SUBMISSION_TYPES,
+  ticketSubmissionSchema,
+} from "@/schemas";
+import type {
+  ReviewInput,
+  SeniorReview,
+  TicketSubmission,
+  WorkTicket,
+} from "@/types";
 import { SeniorReviewCard } from "@/components/senior-review-card";
 
 const reviewResponseSchema = z.object({ review: seniorReviewSchema });
+
+export function createReviewRequest(
+  ticket: WorkTicket,
+  submission: TicketSubmission,
+): ReviewInput {
+  const { createdAt: _createdAt, isDemo: _isDemo, ...generatedTicket } = ticket;
+  void _createdAt;
+  void _isDemo;
+  return reviewInputSchema.parse({
+    ticket: generatedTicket,
+    ...submission,
+  });
+}
 
 export function SolutionWorkspace({
   ticket,
@@ -24,6 +47,12 @@ export function SolutionWorkspace({
   onSubmission?: (submission: TicketSubmission) => void;
   onReview?: (submission: TicketSubmission, review: SeniorReview) => void;
 }) {
+  const initialSubmissionType =
+    initialSubmission?.submissionType ?? "Pseudocode / technical plan";
+  const [submissionType, setSubmissionType] =
+    useState<TicketSubmission["submissionType"]>(initialSubmissionType);
+  const [reviewSubmissionType, setReviewSubmissionType] =
+    useState<TicketSubmission["submissionType"]>(initialSubmissionType);
   const [isReviewing, setIsReviewing] = useState(false);
   const [review, setReview] = useState<SeniorReview | undefined>(initialReview);
   const [error, setError] = useState<ClientApiError | null>(null);
@@ -36,6 +65,7 @@ export function SolutionWorkspace({
 
     const formData = new FormData(event.currentTarget);
     const candidate = {
+      submissionType,
       approach: String(formData.get("approach") ?? ""),
       code: String(formData.get("code") ?? ""),
       difficulties: String(formData.get("difficulties") ?? ""),
@@ -53,15 +83,14 @@ export function SolutionWorkspace({
     onSubmission?.(parsed.data);
 
     try {
-      const { createdAt: _createdAt, isDemo: _isDemo, ...generatedTicket } = ticket;
-      void _createdAt;
-      void _isDemo;
+      const reviewRequest = createReviewRequest(ticket, parsed.data);
       const result = await postJson(
         "/api/reviews",
-        { ticket: generatedTicket, ...parsed.data },
+        reviewRequest,
         reviewResponseSchema,
       );
       setReview(result.review);
+      setReviewSubmissionType(parsed.data.submissionType);
       onReview?.(parsed.data, result.review);
     } catch (caught) {
       setError(caught instanceof ClientApiError ? caught : new ClientApiError("The review failed. Please retry.", "UNKNOWN", true));
@@ -78,7 +107,7 @@ export function SolutionWorkspace({
   const inputClass = "mt-2 w-full border border-[#cbd4cc] bg-white px-3.5 py-3 leading-6 placeholder:text-[#97a29c] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40";
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <form ref={formRef} onSubmit={submit} className="border border-[#d5ddd6] bg-white">
         <header className="border-b border-[#e1e6e1] p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">Your solution</p>
@@ -89,8 +118,39 @@ export function SolutionWorkspace({
           <label className="block text-sm font-semibold">Your approach
             <textarea name="approach" required minLength={20} maxLength={2000} rows={5} className={inputClass} defaultValue={initialSubmission?.approach} placeholder="Explain how you would investigate and solve the ticket…" />
           </label>
+
+          <fieldset>
+            <legend className="text-sm font-semibold">Submission type</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {SUBMISSION_TYPES.map((option) => (
+                <label
+                  key={option}
+                  className={
+                    "cursor-pointer border px-3 py-2.5 text-sm font-medium transition-colors focus-within:ring-2 focus-within:ring-[#678616] focus-within:ring-offset-2 " +
+                    (submissionType === option
+                      ? "border-[#14261f] bg-[#eef1e9] text-[#14261f]"
+                      : "border-[#cbd4cc] bg-white text-[#64736d] hover:border-[#84958c]")
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="submissionType"
+                    value={option}
+                    checked={submissionType === option}
+                    onChange={() => setSubmissionType(option)}
+                    className="mr-2 accent-[#678616]"
+                  />
+                  {option}
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs leading-5 text-[#74817b]">
+              Plans are scored on reasoning and coverage; working code is also reviewed for implementation quality.
+            </p>
+          </fieldset>
+
           <label className="block text-sm font-semibold">Code or pseudocode
-            <textarea name="code" required minLength={10} maxLength={8000} rows={12} spellCheck={false} className={`${inputClass} font-mono text-[13px]`} defaultValue={initialSubmission?.code} placeholder="// Paste code or write clear pseudocode here" />
+            <textarea name="code" required minLength={10} maxLength={8000} rows={12} spellCheck={false} className={inputClass + " font-mono text-[13px]"} defaultValue={initialSubmission?.code} placeholder="// Paste code or write clear pseudocode here" />
           </label>
           <label className="block text-sm font-semibold">What was difficult?
             <textarea name="difficulties" maxLength={1200} rows={3} className={inputClass} defaultValue={initialSubmission?.difficulties} placeholder="Tell your senior where you felt unsure…" />
@@ -115,7 +175,12 @@ export function SolutionWorkspace({
           </button>
         </div>
       </form>
-      {review && <SeniorReviewCard review={review} />}
+      {review && (
+        <SeniorReviewCard
+          review={review}
+          submissionType={reviewSubmissionType}
+        />
+      )}
     </div>
   );
 }

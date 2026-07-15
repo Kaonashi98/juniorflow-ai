@@ -94,6 +94,32 @@ describe("versioned history storage", () => {
     ]);
   });
 
+  it("defaults legacy submissions without a submission type to pseudocode", () => {
+    const entry = createHistoryEntry(
+      profile,
+      { ...DEMO_TICKET, isDemo: undefined },
+      "00000000-0000-4000-8000-000000000013",
+    );
+    const legacySubmission = {
+      approach: "A detailed legacy approach that remains valid after migration.",
+      code: "Render the empty state after loading completes.",
+      difficulties: "",
+      seniorQuestion: "",
+    };
+    const serialized = JSON.stringify({
+      version: 1,
+      entries: [{
+        ...entry,
+        status: "solution-draft",
+        submission: legacySubmission,
+      }],
+    });
+
+    const parsed = parseHistory(serialized);
+    expect(parsed?.entries[0]?.submission?.submissionType).toBe(
+      "Pseudocode / technical plan",
+    );
+  });
   it("isolates corrupted data and recovers safely", () => {
     storage.setItem(STORAGE_KEY, "{not-json");
     const result = loadHistory(storage);

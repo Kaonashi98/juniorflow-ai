@@ -24,7 +24,7 @@ export function DemoWorkspace() {
   const inputClass = "mt-2 w-full border border-[#cbd4cc] bg-white px-3.5 py-3 leading-6 placeholder:text-[#97a29c] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40";
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <form onSubmit={submit} className="border border-[#d5ddd6] bg-white">
         <header className="border-b border-[#e1e6e1] p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#678616]">Sample solution · Demo mode</p>

@@ -218,8 +218,16 @@ export const workTicketSchema = generatedTicketSchema.extend({
   isDemo: z.boolean().optional(),
 });
 
+export const SUBMISSION_TYPES = [
+  "Pseudocode / technical plan",
+  "Working code",
+] as const;
+
+export const submissionTypeSchema = z.enum(SUBMISSION_TYPES);
+
 export const ticketSubmissionSchema = z
   .object({
+    submissionType: submissionTypeSchema.default("Pseudocode / technical plan"),
     approach: boundedText("Approach", 20, 2000),
     code: boundedText("Code or pseudocode", 10, 8000),
     difficulties: z.string().trim().max(1200),
@@ -230,6 +238,7 @@ export const ticketSubmissionSchema = z
 export const reviewInputSchema = z
   .object({
     ticket: generatedTicketSchema,
+    submissionType: submissionTypeSchema,
     approach: ticketSubmissionSchema.shape.approach,
     code: ticketSubmissionSchema.shape.code,
     difficulties: ticketSubmissionSchema.shape.difficulties,
@@ -241,17 +250,17 @@ export const seniorReviewSchema = z
   .object({
     overallScore: z.number().int().min(0).max(100),
     approachAssessment: outputText(1000),
-    strengths: outputList(350, 8),
+    strengths: z.array(outputText(350)).max(8),
     problems: z.array(outputText(350)).max(8),
     possibleBugs: z.array(outputText(350)).max(8),
     securityConcerns: z.array(outputText(350)).max(8),
     readabilityAssessment: outputText(800),
-    acceptanceCriteriaAssessment: outputList(400, 10),
-    improvements: outputList(400, 8),
+    acceptanceCriteriaAssessment: z.array(outputText(400)).max(10),
+    improvements: z.array(outputText(400)).max(8),
     educationalExplanation: outputText(1800),
     conciseIdealSolution: outputText(1400),
     recommendedNextTicket: outputText(500),
-    skillsToStudy: z.array(outputText(100)).min(1).max(8),
+    skillsToStudy: z.array(outputText(100)).max(8),
   })
   .strict();
 
@@ -291,6 +300,7 @@ export const apiErrorSchema = z.object({
 export type ProfileInput = z.infer<typeof profileInputSchema>;
 export type GeneratedTicket = z.infer<typeof generatedTicketSchema>;
 export type WorkTicket = z.infer<typeof workTicketSchema>;
+export type SubmissionType = z.infer<typeof submissionTypeSchema>;
 export type TicketSubmission = z.infer<typeof ticketSubmissionSchema>;
 export type ReviewInput = z.infer<typeof reviewInputSchema>;
 export type SeniorReview = z.infer<typeof seniorReviewSchema>;

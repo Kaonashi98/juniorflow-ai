@@ -119,6 +119,7 @@ export function HistoryList() {
                     <StatusBadge status={entry.status} />
                     <span className="font-mono text-xs text-[#77847e]">{entry.ticket.ticketId}</span>
                     {entry.review && <span className="border border-[#cfe0aa] px-2 py-1 text-xs font-semibold text-[#526d14]">{entry.review.overallScore}/100</span>}
+                    {entry.submission && <span className="bg-[#eef1e9] px-2 py-1 text-xs font-semibold text-[#52615b]">{entry.submission.submissionType}</span>}
                   </div>
                   <h2 className="mt-3 text-xl font-semibold tracking-tight group-hover:text-[#526d14]">{entry.ticket.title}</h2>
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#718079]">

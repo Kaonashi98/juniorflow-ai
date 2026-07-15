@@ -12,7 +12,7 @@ import type { WorkTicket } from "@/types";
 
 export function TicketDetails({ ticket }: { ticket: WorkTicket }) {
   return (
-    <article className="border border-[#d5ddd6] bg-white">
+    <article className="min-w-0 border border-[#d5ddd6] bg-white">
       <header className="border-b border-[#dfe5df] p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
           {ticket.isDemo && <span className="bg-[#c8f169] px-2.5 py-1 text-xs font-bold tracking-wide text-[#14261f]">SAMPLE TICKET / DEMO MODE</span>}

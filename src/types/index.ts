@@ -8,6 +8,7 @@ export type {
   ProfileInput as DeveloperProfile,
   ReviewInput,
   SeniorReview,
+  SubmissionType,
   TicketSubmission,
   WorkTicket,
 } from "@/schemas";
