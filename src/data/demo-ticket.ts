@@ -1,0 +1,58 @@
+import type { HistoryEntry, WorkTicket } from "@/types";
+
+export const DEMO_TICKET: WorkTicket = {
+  id: "JF-2048",
+  title: "Add an empty state to the project dashboard",
+  companyContext:
+    "Flowdesk is a small project-management SaaS used by distributed product teams. New users currently land on a blank dashboard before creating their first project.",
+  problem:
+    "The dashboard renders an empty white panel when the projects array has no items. Support reports that trial users assume the product is broken and leave before creating a project.",
+  objective:
+    "Create a clear, accessible empty state that explains the next step and helps first-time users create their first project.",
+  requirements: [
+    "Show the empty state only when the projects request succeeds with zero items.",
+    "Include a heading, short description, and primary “Create project” action.",
+    "Keep the existing project grid unchanged when one or more projects exist.",
+    "Use the design system components already available in the codebase.",
+  ],
+  acceptanceCriteria: [
+    "Given an empty projects array, the empty state is visible.",
+    "Given at least one project, the existing project grid is visible instead.",
+    "The primary action navigates to /projects/new.",
+    "The state is keyboard accessible and works at 320px viewport width.",
+  ],
+  priority: "Medium",
+  difficulty: "Easy",
+  estimatedTime: "60–90 minutes",
+  technologies: ["React", "TypeScript", "Tailwind CSS"],
+  possibleFiles: [
+    "src/app/dashboard/page.tsx",
+    "src/components/projects/empty-state.tsx",
+    "src/components/projects/project-grid.test.tsx",
+  ],
+  initialHint:
+    "Start by locating where loading, error, and successful project states branch. The empty state belongs in the successful branch.",
+  commonMistakes: [
+    "Showing the empty state briefly while the request is still loading.",
+    "Using array truthiness instead of checking its length.",
+    "Adding a clickable div instead of a semantic link or button.",
+  ],
+  createdAt: "2026-07-15T08:30:00.000Z",
+  isDemo: true,
+};
+
+export const DEMO_HISTORY: HistoryEntry[] = [
+  {
+    id: "history-demo-1",
+    profile: {
+      role: "Front-End",
+      experience: "6–12 months",
+      technologies: ["React", "TypeScript"],
+      availableTime: "2 hours",
+      ticketLanguage: "English",
+      projectDescription: "A project-management dashboard for small teams.",
+    },
+    ticket: DEMO_TICKET,
+    savedAt: "2026-07-15T08:30:00.000Z",
+  },
+];
