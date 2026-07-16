@@ -66,7 +66,7 @@ describe("fully bilingual application content", () => {
   });
 
   it("provides localized titles for every route", () => {
-    for (const page of ["home", "simulate", "history", "demo", "guide", "session"] as const) {
+    for (const page of ["home", "simulate", "history", "demo", "guide", "session", "notFound", "error"] as const) {
       expect(localizedDocumentTitle(page, "en")).not.toBe(localizedDocumentTitle(page, "it"));
       expect(localizedDocumentTitle(page, "it")).toContain("JuniorFlow AI");
     }

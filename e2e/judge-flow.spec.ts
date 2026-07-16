@@ -159,6 +159,7 @@ test("404 and mobile layouts remain localized and do not overflow horizontally",
 
   await page.goto("/missing-judge-route");
   await expect(page.getByText("404 · TICKET NON TROVATO", { exact: true })).toBeVisible();
+  await expect(page).toHaveTitle("Pagina non trovata | JuniorFlow AI");
   const favicon = await page.locator('link[rel~="icon"][type="image/x-icon"]').getAttribute("href");
   expect(favicon).toBeTruthy();
 });
