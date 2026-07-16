@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { clearAccessRequiredError, GUIDED_PROFILE_EXAMPLE } from "@/components/profile-form";
+import { clearAccessRequiredError, GUIDED_PROFILE_EXAMPLE, INITIAL_TECHNOLOGIES } from "@/components/profile-form";
 import { ClientApiError } from "@/lib/api-client";
 import { profileInputSchema } from "@/schemas";
 
 describe("guided profile example", () => {
+  it("starts with no predefined technologies", () => {
+    expect(INITIAL_TECHNOLOGIES).toEqual([]);
+    expect(INITIAL_TECHNOLOGIES).not.toContain("React");
+    expect(INITIAL_TECHNOLOGIES).not.toContain("TypeScript");
+  });
   it("fills a valid profile but remains plain data and cannot submit itself", () => {
     expect(GUIDED_PROFILE_EXAMPLE).not.toHaveProperty("submit");
     const result = profileInputSchema.safeParse({

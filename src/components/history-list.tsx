@@ -106,18 +106,18 @@ export function HistoryList() {
         </div>
       )}
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex w-full flex-col gap-3 sm:flex-row">
-          <label className="block w-full max-w-md text-sm font-semibold">
-            {copy.search}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="grid w-full gap-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-end">
+          <label className="block w-full text-sm font-semibold">
+            <span className="block">{copy.search}</span>
             <span className="relative mt-2 block">
               <Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#66736d]" />
               <input value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-12 w-full border border-[#cbd4cc] bg-white pl-10 pr-4 placeholder:text-[#6a766f] focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40" placeholder={copy.placeholder} />
             </span>
           </label>
-          <label className="block text-sm font-semibold">
-            {copy.status}
-            <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} className="mt-2 min-h-12 w-full border border-[#cbd4cc] bg-white px-3.5 sm:w-52">
+          <label className="block w-full text-sm font-semibold">
+            <span className="block">{copy.status}</span>
+            <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} className="mt-2 min-h-12 w-full border border-[#cbd4cc] bg-white px-3.5 focus:border-[#678616] focus:ring-2 focus:ring-[#c8f169]/40">
               <option value="all">{copy.all}</option>
               <option value="ticket-generated">{formatHistoryStatus("ticket-generated", locale)}</option>
               <option value="solution-draft">{formatHistoryStatus("solution-draft", locale)}</option>

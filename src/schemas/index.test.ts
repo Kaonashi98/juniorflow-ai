@@ -50,7 +50,7 @@ describe("shared Zod schemas", () => {
       ...validProfile,
       experience: "Junior with internship experience",
       technologies: ["Angular", "Docker", "GraphQL"],
-      customTechnologies: " Docker, docker, , GraphQL ",
+      customTechnologies: " Docker, , GraphQL ",
     });
     expect(result.customTechnologies).toBe("Docker, GraphQL");
   });
@@ -60,9 +60,14 @@ describe("shared Zod schemas", () => {
     expect(normalizeCustomTechnologies("Redis, , redis, RabbitMQ")).toEqual(["Redis", "RabbitMQ"]);
   });
 
-  it("accepts five predefined with up to five custom technologies", () => {
-    expect(profileInputSchema.parse(profileWithTechnologies(fivePredefined, "REST APIs, MySQL")).technologies).toHaveLength(7);
-    expect(profileInputSchema.parse(profileWithTechnologies(fivePredefined, "REST APIs, MySQL, Docker, Redis, GraphQL")).technologies).toHaveLength(10);
+  it("accepts at most five total technologies", () => {
+    expect(profileInputSchema.parse(profileWithTechnologies(["TypeScript", "Angular", "Git / GitHub"], "REST APIs, MySQL")).technologies).toHaveLength(5);
+  });
+
+  it("rejects a sixth total technology with a specific message", () => {
+    const result = profileInputSchema.safeParse(profileWithTechnologies(fivePredefined, "Docker"));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues.some((issue) => issue.message === "Choose no more than 5 total technologies.")).toBe(true);
   });
 
   it("rejects six predefined technologies with a specific message", () => {
@@ -77,10 +82,15 @@ describe("shared Zod schemas", () => {
     if (!result.success) expect(result.error.issues[0]?.message).toBe("Add no more than five custom technologies.");
   });
 
-  it("deduplicates predefined and custom values", () => {
-    const parsed = profileInputSchema.parse(profileWithTechnologies(fivePredefined, "typescript, Docker, docker"));
-    expect(parsed.technologies).toEqual([...fivePredefined, "Docker"]);
-    expect(getEffectiveCustomTechnologies(fivePredefined, "typescript, Docker, docker")).toEqual(["Docker"]);
+  it("rejects duplicate custom and predefined/custom values case-insensitively", () => {
+    expect(profileInputSchema.safeParse(profileWithTechnologies(["TypeScript"], "Docker, docker")).success).toBe(false);
+    expect(profileInputSchema.safeParse(profileWithTechnologies(["TypeScript"], "typescript, Docker")).success).toBe(false);
+    expect(getEffectiveCustomTechnologies(["TypeScript"], "typescript, Docker")).toEqual(["Docker"]);
+  });
+
+  it("ignores empty comma-separated custom values", () => {
+    const parsed = profileInputSchema.parse(profileWithTechnologies(["TypeScript"], " , Docker, , GraphQL, "));
+    expect(parsed.technologies).toEqual(["TypeScript", "Docker", "GraphQL"]);
   });
 
   it("validates custom technology bounds", () => {

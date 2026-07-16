@@ -16,6 +16,8 @@ export const PREDEFINED_TECHNOLOGY_OPTIONS = [
   "React", "Next.js", "TypeScript", "JavaScript", "Node.js", "Python", "Java",
   "React Native", "Flutter", "SQL", "Angular", "Spring Boot", "REST APIs",
   "MySQL", "PostgreSQL", "Git / GitHub", "HTML / CSS",
+  "Vue.js", "C#", ".NET", "Kotlin", "Swift", "MongoDB", "Docker",
+  "Firebase", "Supabase", "GraphQL",
 ] as const;
 
 const predefinedTechnologySet = new Set<string>(
@@ -50,7 +52,12 @@ export function getEffectiveCustomTechnologies(predefined: string[], customInput
 export const customTechnologiesSchema = z.string()
   .max(150, "Other technologies must be 150 characters or fewer.")
   .superRefine((value, context) => {
+    const rawEntries = value.split(",").map((entry) => entry.trim()).filter(Boolean);
     const entries = normalizeCustomTechnologies(value);
+    const normalizedKeys = rawEntries.map((entry) => entry.toLowerCase());
+    if (new Set(normalizedKeys).size !== normalizedKeys.length) {
+      context.addIssue({ code: "custom", message: "Remove duplicate custom technologies." });
+    }
     if (entries.some((entry) => entry.length > 40)) {
       context.addIssue({ code: "custom", message: "Each custom technology must be 40 characters or fewer." });
     }
@@ -65,40 +72,49 @@ const predefinedTechnologiesSchema = z.array(z.enum(PREDEFINED_TECHNOLOGY_OPTION
   .transform(dedupeTechnologies)
   .pipe(z.array(z.string()).max(5, "Choose no more than five predefined technologies."));
 
-export const profileInputSchema = z.object({
-  role: developerRoleSchema,
-  experience: experienceLevelSchema,
-  technologies: selectedTechnologiesSchema,
-  predefinedTechnologies: predefinedTechnologiesSchema.optional(),
-  customTechnologies: customTechnologiesSchema.optional(),
-  availableTime: z.enum(["30 minutes", "1 hour", "2 hours", "Half a day"]),
-  projectDescription: boundedText("Project description", 20, 800),
-}).strict().superRefine((profile, context) => {
-  const customEntries = normalizeCustomTechnologies(profile.customTechnologies ?? "");
-  const customSet = new Set(customEntries.map((item) => item.toLowerCase()));
-  const predefinedTechnologies = profile.predefinedTechnologies ??
-    profile.technologies.filter((item) => predefinedTechnologySet.has(item.toLowerCase()) && !customSet.has(item.toLowerCase()));
-  const effectiveCustomTechnologies = getEffectiveCustomTechnologies(predefinedTechnologies, profile.customTechnologies ?? "");
-  const expectedTechnologies = dedupeTechnologies([...predefinedTechnologies, ...effectiveCustomTechnologies]);
-  const technologySet = new Set(profile.technologies.map((item) => item.toLowerCase()));
-  const expectedSet = new Set(expectedTechnologies.map((item) => item.toLowerCase()));
+function createProfileInputSchema(maximumTechnologies: 5 | 10) {
+  return z.object({
+    role: developerRoleSchema,
+    experience: experienceLevelSchema,
+    technologies: selectedTechnologiesSchema,
+    predefinedTechnologies: predefinedTechnologiesSchema.optional(),
+    customTechnologies: customTechnologiesSchema.optional(),
+    availableTime: z.enum(["30 minutes", "1 hour", "2 hours", "Half a day"]),
+    projectDescription: boundedText("Project description", 20, 800),
+  }).strict().superRefine((profile, context) => {
+    const customEntries = normalizeCustomTechnologies(profile.customTechnologies ?? "");
+    const customSet = new Set(customEntries.map((item) => item.toLowerCase()));
+    const predefinedTechnologies = profile.predefinedTechnologies ??
+      profile.technologies.filter((item) => predefinedTechnologySet.has(item.toLowerCase()) && !customSet.has(item.toLowerCase()));
+    const effectiveCustomTechnologies = getEffectiveCustomTechnologies(predefinedTechnologies, profile.customTechnologies ?? "");
+    const expectedTechnologies = dedupeTechnologies([...predefinedTechnologies, ...effectiveCustomTechnologies]);
+    const technologySet = new Set(profile.technologies.map((item) => item.toLowerCase()));
+    const expectedSet = new Set(expectedTechnologies.map((item) => item.toLowerCase()));
+    const predefinedSet = new Set(predefinedTechnologies.map((item) => item.toLowerCase()));
+    const duplicatesPredefined = customEntries.some((item) => predefinedSet.has(item.toLowerCase()));
 
-  if (predefinedTechnologies.length > 5) {
-    context.addIssue({ code: "custom", path: ["technologies"], message: "Choose no more than five predefined technologies." });
-  }
-  if (effectiveCustomTechnologies.length > 5) {
-    context.addIssue({ code: "custom", path: ["customTechnologies"], message: "Add no more than five custom technologies." });
-  }
-  if (profile.technologies.length > 10) {
-    context.addIssue({ code: "custom", path: ["technologies"], message: "Choose no more than ten total technologies." });
-  }
-  const listsMatch = expectedSet.size === technologySet.size &&
-    [...expectedSet].every((technology) => technologySet.has(technology));
-  if (!listsMatch) {
-    context.addIssue({ code: "custom", path: ["technologies"], message: "The technology list must match the predefined and custom selections." });
-  }
-});
+    if (predefinedTechnologies.length > 5) {
+      context.addIssue({ code: "custom", path: ["technologies"], message: "Choose no more than five predefined technologies." });
+    }
+    if (effectiveCustomTechnologies.length > 5) {
+      context.addIssue({ code: "custom", path: ["customTechnologies"], message: "Add no more than five custom technologies." });
+    }
+    if (duplicatesPredefined) {
+      context.addIssue({ code: "custom", path: ["customTechnologies"], message: "A custom technology duplicates a selected technology." });
+    }
+    if (profile.technologies.length > maximumTechnologies) {
+      context.addIssue({ code: "custom", path: ["technologies"], message: `Choose no more than ${maximumTechnologies} total technologies.` });
+    }
+    const listsMatch = expectedSet.size === technologySet.size &&
+      [...expectedSet].every((technology) => technologySet.has(technology));
+    if (!listsMatch) {
+      context.addIssue({ code: "custom", path: ["technologies"], message: "The technology list must match the predefined and custom selections." });
+    }
+  });
+}
 
+export const profileInputSchema = createProfileInputSchema(5);
+const savedProfileInputSchema = createProfileInputSchema(10);
 const outputText = (max: number) => z.string().trim().min(1).max(max);
 const outputList = (itemMax: number, maxItems = 8) =>
   z.array(outputText(itemMax)).min(1).max(maxItems);
@@ -186,7 +202,7 @@ export const historyStatusSchema = z.enum(["ticket-generated", "solution-draft",
 export const historyEntrySchema = z.object({
   id: z.string().uuid(),
   submissionRevision: z.number().int().min(0).max(10_000).default(0),
-  profile: profileInputSchema,
+  profile: savedProfileInputSchema,
   ticket: workTicketSchema,
   status: historyStatusSchema,
   submission: ticketSubmissionSchema.optional(),

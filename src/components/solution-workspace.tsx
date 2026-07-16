@@ -34,6 +34,7 @@ import { SeniorReviewCard } from "@/components/senior-review-card";
 import { useAccess, useLanguage } from "@/components/app-providers";
 import { localizedApiError } from "@/lib/ui-copy";
 import { formatSubmissionType } from "@/lib/presentation";
+import { GenerationLoading, type GenerationPhase } from "@/components/generation-loading";
 
 const reviewResponseSchema = z.object({ review: seniorReviewSchema });
 
@@ -101,6 +102,7 @@ export function SolutionWorkspace({
   const [reviewSubmissionType, setReviewSubmissionType] =
     useState<TicketSubmission["submissionType"]>(initialSubmissionType);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState<GenerationPhase | null>(null);
   const [review, setReview] = useState<SeniorReview | undefined>(initialReview);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [hasSubmissionChanged, setHasSubmissionChanged] =
@@ -190,6 +192,7 @@ export function SolutionWorkspace({
 
     inFlight.current = true;
     setIsReviewing(true);
+    setLoadingPhase("preparing");
     setError(null);
     onSubmission?.(parsed.data);
 
@@ -204,7 +207,9 @@ export function SolutionWorkspace({
         "/api/reviews",
         reviewRequest,
         reviewResponseSchema,
+        { onPhase: (phase) => setLoadingPhase(phase === "requesting" ? "creating" : "validating") },
       );
+      setLoadingPhase("saving");
       setReview(result.review);
       setReviewSubmissionType(parsed.data.submissionType);
       setHasSubmissionChanged(false);
@@ -214,6 +219,7 @@ export function SolutionWorkspace({
     } finally {
       inFlight.current = false;
       setIsReviewing(false);
+      setLoadingPhase(null);
     }
   }
 
@@ -379,8 +385,9 @@ export function SolutionWorkspace({
                 title={!requestEnabled && !isReviewing ? solutionCopy.disabledHelp : undefined}
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-5 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isReviewing ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />{solutionCopy.reviewing}</> : <>{solutionCopy.request} <ArrowRight aria-hidden="true" size={18} /></>}
+                {isReviewing && loadingPhase ? <><LoaderCircle aria-hidden="true" size={18} className="motion-safe:animate-spin" />{solutionCopy.loading[loadingPhase]}</> : <>{solutionCopy.request} <ArrowRight aria-hidden="true" size={18} /></>}
               </button>
+              {isReviewing && loadingPhase && <GenerationLoading phase={loadingPhase} copy={solutionCopy.loading} />}
               {!requestEnabled && !isReviewing && (
                 <p id="review-disabled-help" className="mt-2 text-sm leading-6 text-[#66736d]">
                   {solutionCopy.disabledHelp}

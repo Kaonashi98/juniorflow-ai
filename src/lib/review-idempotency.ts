@@ -1,6 +1,6 @@
-import type { ReviewInput } from "@/schemas";
+import type { ReviewInput, SeniorReview } from "@/schemas";
 
-const PENDING_TTL_MS = 60_000;
+const PENDING_TTL_MS = 5 * 60_000;
 const COMPLETED_TTL_MS = 6 * 60 * 60 * 1_000;
 
 type ReservationState = "pending" | "completed";
@@ -8,6 +8,7 @@ type ReservationState = "pending" | "completed";
 interface Reservation {
   state: ReservationState;
   updatedAt: number;
+  value?: SeniorReview;
 }
 
 const reservations = new Map<string, Reservation>();
@@ -34,8 +35,14 @@ export function reserveReview(key: string, now = Date.now()) {
   return true;
 }
 
-export function completeReviewReservation(key: string, now = Date.now()) {
-  reservations.set(key, { state: "completed", updatedAt: now });
+export function completeReviewReservation(key: string, value: SeniorReview, now = Date.now()) {
+  reservations.set(key, { state: "completed", updatedAt: now, value });
+}
+
+export function getCompletedReview(key: string, now = Date.now()) {
+  pruneReservations(now);
+  const reservation = reservations.get(key);
+  return reservation?.state === "completed" ? reservation.value : undefined;
 }
 
 export function releaseReviewReservation(key: string) {

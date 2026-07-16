@@ -90,14 +90,14 @@ describe("POST /api/reviews security and duplicate protection", () => {
     expect(mockedGenerateReview).toHaveBeenCalledTimes(1);
   });
 
-  it("does not call OpenAI logic for a repeated completed review", async () => {
+  it("returns a cached completed review without a second OpenAI call", async () => {
     const cookie = createAccessToken(SECRET);
     const first = await POST(reviewRequest(cookie));
     const duplicate = await POST(reviewRequest(cookie));
     const payload = await duplicate.json();
     expect(first.status).toBe(200);
-    expect(duplicate.status).toBe(409);
-    expect(payload.error.code).toBe("DUPLICATE_REVIEW");
+    expect(duplicate.status).toBe(200);
+    expect(payload.review).toEqual(DEMO_REVIEW);
     expect(mockedGenerateReview).toHaveBeenCalledTimes(1);
   });
 });

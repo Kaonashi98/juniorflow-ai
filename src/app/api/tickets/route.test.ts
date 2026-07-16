@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEMO_TICKET } from "@/data/demo-ticket";
 import { ACCESS_MAX_AGE_SECONDS, createAccessToken, ACCESS_COOKIE_NAME } from "@/lib/access-session";
 import { PublicApiError } from "@/lib/api-errors";
+import { clearTicketReservations } from "@/lib/generation-idempotency";
 
 const { botCheck } = vi.hoisted(() => ({ botCheck: vi.fn() }));
 
@@ -15,8 +16,8 @@ import { POST } from "@/app/api/tickets/route";
 const mockGenerateTicket = vi.mocked(generateTicket);
 const SECRET = "test-app-session-secret-with-more-than-thirty-two-characters";
 
-function request(cookie?: string, origin: string | null = "http://localhost") {
-  const headers: Record<string, string> = { "content-type": "application/json" };
+function request(cookie?: string, origin: string | null = "http://localhost", idempotencyKey = "00000000-0000-4000-8000-000000000060") {
+  const headers: Record<string, string> = { "content-type": "application/json", "idempotency-key": idempotencyKey };
   if (origin !== null) headers.origin = origin;
   if (cookie) headers.cookie = ACCESS_COOKIE_NAME + "=" + cookie;
   return new Request("http://localhost/api/tickets", {
@@ -40,6 +41,7 @@ describe("POST /api/tickets security boundary", () => {
     process.env.APP_SESSION_SECRET = SECRET;
     botCheck.mockReset();
     botCheck.mockResolvedValue(undefined);
+    clearTicketReservations();
     mockGenerateTicket.mockReset();
     mockGenerateTicket.mockResolvedValue(DEMO_TICKET);
   });
@@ -73,6 +75,29 @@ describe("POST /api/tickets security boundary", () => {
     const response = await POST(request(createAccessToken(SECRET)));
     expect(response.status).toBe(200);
     expect(mockGenerateTicket).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a cached completed ticket without a second OpenAI call", async () => {
+    const cookie = createAccessToken(SECRET);
+    const first = await POST(request(cookie));
+    const second = await POST(request(cookie));
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(mockGenerateTicket).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a concurrent ticket generation without a second OpenAI call", async () => {
+    let resolveTicket!: (ticket: typeof DEMO_TICKET) => void;
+    mockGenerateTicket.mockImplementationOnce(() => new Promise((resolve) => { resolveTicket = resolve; }));
+    const cookie = createAccessToken(SECRET);
+    const firstRequest = POST(request(cookie));
+    await vi.waitFor(() => expect(mockGenerateTicket).toHaveBeenCalledTimes(1));
+    const duplicate = await POST(request(cookie));
+    expect(duplicate.status).toBe(409);
+    expect((await duplicate.json()).error.code).toBe("GENERATION_IN_PROGRESS");
+    expect(mockGenerateTicket).toHaveBeenCalledTimes(1);
+    resolveTicket(DEMO_TICKET);
+    expect((await firstRequest).status).toBe(200);
   });
 
   it("rejects a bot before access validation and never calls OpenAI", async () => {

@@ -9,12 +9,14 @@ import { requireAiAccess } from "@/lib/access.server";
 import { requireSameOrigin } from "@/lib/request-security";
 import {
   completeReviewReservation,
+  getCompletedReview,
   releaseReviewReservation,
   reserveReview,
   reviewReservationKey,
 } from "@/lib/review-idempotency";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   let reservationKey: string | null = null;
@@ -38,18 +40,20 @@ export async function POST(request: Request) {
     }
 
     reservationKey = reviewReservationKey(parsed.data);
+    const completedReview = getCompletedReview(reservationKey);
+    if (completedReview) return NextResponse.json({ review: completedReview });
     if (!reserveReview(reservationKey)) {
       throw new PublicApiError(
-        "DUPLICATE_REVIEW",
-        "This submission already has a completed or in-progress review. Choose Edit submission before requesting another review.",
+        "GENERATION_IN_PROGRESS",
+        "This review generation is already in progress.",
         409,
-        false,
+        true,
       );
     }
 
     ownsReservation = true;
     const review = await generateReview(parsed.data);
-    completeReviewReservation(reservationKey);
+    completeReviewReservation(reservationKey, review);
     return NextResponse.json({ review });
   } catch (error) {
     if (reservationKey && ownsReservation) releaseReviewReservation(reservationKey);

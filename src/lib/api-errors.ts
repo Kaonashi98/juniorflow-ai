@@ -10,6 +10,7 @@ export type ApiErrorCode =
   | "CONFIGURATION_ERROR"
   | "INVALID_INPUT"
   | "DUPLICATE_REVIEW"
+  | "GENERATION_IN_PROGRESS"
   | "ACCESS_REQUIRED"
   | "FORBIDDEN"
   | "BOT_DETECTED"
@@ -121,8 +122,13 @@ export function errorResponse(error: unknown) {
     },
   };
 
+  const retryAfter = publicError.code === "RATE_LIMITED"
+    ? "30"
+    : publicError.code === "GENERATION_IN_PROGRESS"
+      ? "10"
+      : undefined;
   return NextResponse.json(body, {
     status: publicError.status,
-    headers: publicError.code === "RATE_LIMITED" ? { "Retry-After": "30" } : undefined,
+    headers: retryAfter ? { "Retry-After": retryAfter } : undefined,
   });
 }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { DEMO_REVIEW } from "@/data/demo-review";
 import {
   clearReviewReservations,
   completeReviewReservation,
@@ -20,7 +21,7 @@ describe("review request idempotency", () => {
 
     expect(reserveReview(key, 1_000)).toBe(true);
     expect(reserveReview(key, 1_001)).toBe(false);
-    completeReviewReservation(key, 1_002);
+    completeReviewReservation(key, DEMO_REVIEW, 1_002);
     expect(reserveReview(key, 1_003)).toBe(false);
   });
 
@@ -38,7 +39,7 @@ describe("review request idempotency", () => {
     expect(reserveReview(firstKey, 2_000)).toBe(true);
     releaseReviewReservation(firstKey);
     expect(reserveReview(firstKey, 2_001)).toBe(true);
-    completeReviewReservation(firstKey, 2_002);
+    completeReviewReservation(firstKey, DEMO_REVIEW, 2_002);
     expect(reserveReview(editedKey, 2_003)).toBe(true);
   });
 });

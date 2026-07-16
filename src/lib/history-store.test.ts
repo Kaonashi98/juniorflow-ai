@@ -50,10 +50,21 @@ describe("versioned bilingual history storage", () => {
       ...profile,
       predefinedTechnologies: ["React", "TypeScript"],
       technologies: ["React", "TypeScript", "Docker"],
-      customTechnologies: "typescript, Docker, docker",
+      customTechnologies: "Docker",
     });
     const entry = createHistoryEntry(newProfile, { ...DEMO_TICKET, isDemo: undefined }, "00000000-0000-4000-8000-000000000012");
     expect(parseHistory(serializeHistory([entry]))?.entries[0]?.profile.technologies).toEqual(["React", "TypeScript", "Docker"]);
+  });
+
+  it("keeps compatible version 2 entries created with the previous ten-technology limit", () => {
+    const previousProfile = {
+      ...profile,
+      predefinedTechnologies: ["TypeScript", "Java", "SQL", "Angular", "Spring Boot"],
+      customTechnologies: "REST APIs, MySQL",
+      technologies: ["TypeScript", "Java", "SQL", "Angular", "Spring Boot", "REST APIs", "MySQL"],
+    } as ProfileInput;
+    const entry = createHistoryEntry(previousProfile, { ...DEMO_TICKET, isDemo: undefined }, "00000000-0000-4000-8000-000000000013");
+    expect(parseHistory(serializeHistory([entry]))?.entries[0]?.profile.technologies).toHaveLength(7);
   });
 
   it("isolates version 1 history instead of fabricating translations", () => {

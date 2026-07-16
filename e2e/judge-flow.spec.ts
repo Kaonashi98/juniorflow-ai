@@ -24,14 +24,17 @@ async function mockExternalBoundaries(page: Page) {
   });
   await page.route("**/api/tickets", async (route) => {
     ticketRequests += 1;
+    expect(route.request().headers()["idempotency-key"]).toMatch(/^[0-9a-f-]{36}$/i);
     const payload = route.request().postDataJSON() as Record<string, unknown>;
     expect(payload).not.toHaveProperty("language");
+    await new Promise((resolve) => setTimeout(resolve, 120));
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ticket: generatedTicket }) });
   });
   await page.route("**/api/reviews", async (route) => {
     reviewRequests += 1;
     const payload = route.request().postDataJSON() as Record<string, unknown>;
     expect(payload).not.toHaveProperty("language");
+    await new Promise((resolve) => setTimeout(resolve, 120));
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ review: DEMO_REVIEW }) });
   });
 
@@ -65,6 +68,7 @@ test("global locale persists across navigation and the static demo never calls A
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Come funziona JuniorFlow AI");
 
   await page.goto("/demo");
+  await expect(page.getByText("nessuna richiesta OpenAI.", { exact: false })).toBeVisible();
   await expect(page.getByText(DEMO_TICKET.content.it.title, { exact: true }).filter({ visible: true })).toBeVisible();
   await page.getByRole("button", { name: "Mostra review di esempio", exact: true }).click();
   await expect(page.getByText(DEMO_REVIEW.content.it.approachAssessment, { exact: true })).toBeVisible();
@@ -83,17 +87,24 @@ test("mocked real flow generates once, reviews once, switches locale instantly, 
   const boundaries = await mockExternalBoundaries(page);
   await page.goto("/simulate");
 
+  const generateButton = page.getByRole("button", { name: "Generate my ticket", exact: true });
+  await expect(page.getByRole("button", { name: "React", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("button", { name: "TypeScript", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await expect(generateButton).toBeDisabled();
+  await expect(page.getByText("Choose or add at least one technology.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "TypeScript", exact: true }).click();
+  await expect(page.getByRole("button", { name: "TypeScript", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.locator('textarea[name="projectDescription"]').fill(
     "A collaborative project dashboard for remote teams with tasks, members, and activity updates.",
   );
-  await page.getByRole("button", { name: "Generate my ticket", exact: true }).click();
-
+  await generateButton.click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByLabel("Access code", { exact: true }).fill("controlled-test-code");
   await page.getByRole("button", { name: "Unlock AI features", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 
-  await page.getByRole("button", { name: "Generate my ticket", exact: true }).click();
+  await generateButton.click();
+  await expect(page.getByRole("button", { name: "GPT-5.6 is creating the bilingual ticket…", exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/session\//);
   await expect(page.getByText(DEMO_TICKET.content.en.title, { exact: true })).toBeVisible();
   expect(boundaries.counts().ticketRequests).toBe(1);
@@ -104,7 +115,9 @@ test("mocked real flow generates once, reviews once, switches locale instantly, 
   await page.locator('textarea[name="code"]').fill(
     "function EmptyState() { return isEmpty ? <EmptyStateCard /> : <ProjectGrid />; }",
   );
-  await page.getByRole("button", { name: "Request senior review", exact: true }).click();
+  const reviewButton = page.getByRole("button", { name: "Request senior review", exact: true });
+  await reviewButton.click();
+  await expect(page.getByRole("button", { name: "GPT-5.6 is creating the bilingual review…", exact: true })).toBeVisible();
   await expect(page.getByText(DEMO_REVIEW.content.en.approachAssessment, { exact: true })).toBeVisible();
   expect(boundaries.counts().reviewRequests).toBe(1);
 
@@ -114,6 +127,8 @@ test("mocked real flow generates once, reviews once, switches locale instantly, 
   expect(boundaries.counts()).toEqual({ ticketRequests: 1, reviewRequests: 1 });
 
   await page.goto("/history");
+  await expect(page.getByLabel("Cerca ticket", { exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Stato", exact: true })).toBeVisible();
   await expect(page.getByText(DEMO_TICKET.content.it.title, { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Apri", exact: true }).click();
   await expect(page).toHaveURL(/\/session\//);
@@ -130,6 +145,69 @@ test("mocked real flow generates once, reviews once, switches locale instantly, 
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await page.getByRole("button", { name: "Elimina", exact: true }).click();
   await expect(page.getByText("Nessun ticket salvato", { exact: true })).toBeVisible();
+});
+
+test("provider failure preserves the profile and retry reuses the same idempotency key", async ({ page }) => {
+  await mockExternalBoundaries(page);
+  await page.unroute("**/api/tickets");
+  const keys: string[] = [];
+  let requests = 0;
+  await page.route("**/api/tickets", async (route) => {
+    requests += 1;
+    keys.push(route.request().headers()["idempotency-key"] ?? "");
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    if (requests === 1) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { code: "SERVICE_UNAVAILABLE", message: "sanitized", retryable: true } }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ticket: generatedTicket }) });
+  });
+
+  await page.goto("/simulate");
+  await page.getByRole("button", { name: "Angular", exact: true }).click();
+  const description = page.locator('textarea[name="projectDescription"]');
+  await description.fill("A remote-team project platform with assignments, members, and progress tracking.");
+  const generate = page.getByRole("button", { name: "Generate my ticket", exact: true });
+  await generate.click();
+  await page.getByLabel("Access code", { exact: true }).fill("controlled-test-code");
+  await page.getByRole("button", { name: "Unlock AI features", exact: true }).click();
+  await generate.click();
+  await expect(page.getByText("The AI service is temporarily unavailable. Please retry.", { exact: true })).toBeVisible();
+  await expect(description).toHaveValue("A remote-team project platform with assignments, members, and progress tracking.");
+  await expect(page.getByRole("button", { name: "Angular", exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect(await page.evaluate(() => localStorage.getItem("juniorflow-history"))).toBeNull();
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(page).toHaveURL(/\/session\//);
+  expect(requests).toBe(2);
+  expect(keys[0]).toBe(keys[1]);
+});
+
+test("browser contexts isolate the mocked HttpOnly access session and lock revokes it", async ({ browser }) => {
+  const contextA = await browser.newContext();
+  const contextB = await browser.newContext();
+  const pageA = await contextA.newPage();
+  const pageB = await contextB.newPage();
+  const installAccessBoundary = async (page: Page) => {
+    await page.route("**/api/access/status", async (route) => {
+      const unlocked = (route.request().headers().cookie ?? "").includes("juniorflow_access=mock-session");
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ unlocked }) });
+    });
+    await page.route("**/api/access/unlock", async (route) => route.fulfill({ status: 200, headers: { "set-cookie": "juniorflow_access=mock-session; Path=/; HttpOnly; SameSite=Lax" }, contentType: "application/json", body: JSON.stringify({ unlocked: true }) }));
+    await page.route("**/api/access/lock", async (route) => route.fulfill({ status: 200, headers: { "set-cookie": "juniorflow_access=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax" }, contentType: "application/json", body: JSON.stringify({ unlocked: false }) }));
+  };
+  await installAccessBoundary(pageA);
+  await installAccessBoundary(pageB);
+  await pageA.goto("/simulate");
+  await pageB.goto("/simulate");
+  await pageA.getByRole("button", { name: "Unlock AI demo", exact: true }).click();
+  await pageA.getByLabel("Access code", { exact: true }).fill("controlled-test-code");
+  await pageA.getByRole("button", { name: "Unlock AI features", exact: true }).click();
+  await expect(pageA.getByRole("button", { name: "Lock AI demo", exact: true })).toBeVisible();
+  await expect(pageB.getByRole("button", { name: "Unlock AI demo", exact: true })).toBeVisible();
+  await pageA.getByRole("button", { name: "Lock AI demo", exact: true }).click();
+  await expect(pageA.getByRole("button", { name: "Unlock AI demo", exact: true })).toBeVisible();
+  await contextA.close();
+  await contextB.close();
 });
 
 test("404 and mobile layouts remain localized and do not overflow horizontally", async ({ page }) => {

@@ -27,22 +27,25 @@ import {
   generatedTicketSchema,
   getEffectiveCustomTechnologies,
   mergeTechnologies,
+  normalizeCustomTechnologies,
   profileInputSchema,
 } from "@/schemas";
 import type { DeveloperRole } from "@/types";
 import { localizedApiError } from "@/lib/ui-copy";
 import { formatExperience, formatEstimatedTime, formatRole } from "@/lib/presentation";
 import { useAccess, useLanguage } from "@/components/app-providers";
+import { GenerationLoading, type GenerationPhase } from "@/components/generation-loading";
 
 const ticketResponseSchema = z.object({ ticket: generatedTicketSchema });
 
 export function clearAccessRequiredError(error: ClientApiError | null) {
   return error?.code === "ACCESS_REQUIRED" ? null : error;
 }
+export const INITIAL_TECHNOLOGIES: string[] = [];
 export const GUIDED_PROFILE_EXAMPLE = {
   role: "Full-Stack" as DeveloperRole,
   experience: "Junior with internship experience",
-  technologies: ["TypeScript", "React", "Node.js", "REST APIs", "PostgreSQL"],
+  technologies: ["TypeScript", "React", "Node.js", "PostgreSQL"],
   customTechnologies: "Docker",
   availableTime: "2 hours",
   projectDescription: "A project-management dashboard for small remote teams. Users can create projects, invite teammates, and track tasks.",
@@ -54,12 +57,13 @@ export function ProfileForm() {
 
   const { unlocked, unlockRevision, openUnlock, dismissUnlockSuccess } = useAccess();
   const [selectedRole, setSelectedRole] = useState<DeveloperRole>("Front-End");
-  const [technologies, setTechnologies] = useState<string[]>(["React", "TypeScript"]);
+  const [technologies, setTechnologies] = useState<string[]>([...INITIAL_TECHNOLOGIES]);
   const [customTechnologies, setCustomTechnologies] = useState("");
   const [experience, setExperience] = useState("6–12 months");
   const [availableTime, setAvailableTime] = useState("2 hours");
   const [projectDescription, setProjectDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState<GenerationPhase | null>(null);
   const [error, setError] = useState<ClientApiError | null>(null);
   const observedUnlockRevision = useRef(unlockRevision);
   const formRef = useRef<HTMLFormElement>(null);
@@ -72,29 +76,35 @@ export function ProfileForm() {
     return () => window.clearTimeout(timeout);
   }, [unlockRevision]);
   const inFlight = useRef(false);
+  const ticketAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const customValidation = customTechnologiesSchema.safeParse(customTechnologies);
   const effectiveCustomTechnologies = getEffectiveCustomTechnologies(
     technologies,
     customTechnologies,
   );
-  const customError = !customValidation.success
-    ? copy.profile.customInvalid
-    : effectiveCustomTechnologies.length > 5
-      ? copy.profile.customLimit
-      : null;
-  const combinedTechnologies = mergeTechnologies(
-    technologies,
-    customTechnologies,
-  );
+  const rawCustomEntries = customTechnologies.split(",").map((item) => item.trim()).filter(Boolean);
+  const customKeys = rawCustomEntries.map((item) => item.toLowerCase());
+  const customHasDuplicates = new Set(customKeys).size !== customKeys.length;
+  const selectedKeys = new Set(technologies.map((item) => item.toLowerCase()));
+  const customDuplicatesSelected = normalizeCustomTechnologies(customTechnologies)
+    .some((item) => selectedKeys.has(item.toLowerCase()));
+  const combinedTechnologies = mergeTechnologies(technologies, customTechnologies);
+  const customError = customHasDuplicates || customDuplicatesSelected
+    ? copy.profile.customDuplicate
+    : !customValidation.success
+      ? copy.profile.customInvalid
+      : effectiveCustomTechnologies.length > 5
+        ? copy.profile.customLimit
+        : combinedTechnologies.length > 5
+          ? copy.profile.totalLimit
+          : null;
 
   function toggleTechnology(technology: string) {
-    setTechnologies((current) =>
-      current.includes(technology)
-        ? current.filter((item) => item !== technology)
-        : current.length < 5
-          ? [...current, technology]
-          : current,
-    );
+    setTechnologies((current) => {
+      if (current.includes(technology)) return current.filter((item) => item !== technology);
+      const next = [...current, technology];
+      return mergeTechnologies(next, customTechnologies).length <= 5 ? next : current;
+    });
   }
 
   function applyGuidedExample() {
@@ -133,12 +143,21 @@ export function ProfileForm() {
       return;
     }
 
+    const fingerprint = JSON.stringify(parsed.data);
+    if (ticketAttempt.current?.fingerprint !== fingerprint) {
+      ticketAttempt.current = { fingerprint, key: crypto.randomUUID() };
+    }
     inFlight.current = true;
     setIsLoading(true);
+    setLoadingPhase("preparing");
     setError(null);
 
     try {
-      const result = await postJson("/api/tickets", parsed.data, ticketResponseSchema);
+      const result = await postJson("/api/tickets", parsed.data, ticketResponseSchema, {
+        idempotencyKey: ticketAttempt.current.key,
+        onPhase: (phase) => setLoadingPhase(phase === "requesting" ? "creating" : "validating"),
+      });
+      setLoadingPhase("saving");
       const ticket = {
         ...result.ticket,
         createdAt: new Date().toISOString(),
@@ -151,12 +170,14 @@ export function ProfileForm() {
           false,
         );
       }
+      ticketAttempt.current = null;
       router.push(`/session/${entry.id}`);
     } catch (caught) {
       setError(caught instanceof ClientApiError ? caught : new ClientApiError(copy.profile.unknownFailure, "UNKNOWN", true));
     } finally {
       inFlight.current = false;
       setIsLoading(false);
+      setLoadingPhase(null);
     }
   }
 
@@ -230,14 +251,14 @@ export function ProfileForm() {
                   value={customTechnologies}
                   onChange={(event) => setCustomTechnologies(event.target.value)}
                   maxLength={150}
-                  aria-describedby="custom-technologies-help custom-technologies-count"
+                  aria-describedby={`custom-technologies-help custom-technologies-count${customError ? " custom-technologies-error" : ""}`}
                   aria-invalid={Boolean(customError)}
                   className={`${fieldClass} mt-2`}
                   placeholder={copy.profile.customPlaceholder}
                 />
                 <div className="mt-1 flex items-start justify-between gap-4">
                   <div>
-                    {customError && <p className="text-sm text-[#a34235]" role="alert">{customError}</p>}
+                    {customError && <p id="custom-technologies-error" className="text-sm text-[#a34235]" role="alert">{customError}</p>}
                     {!customError && combinedTechnologies.length === 0 && <p className="text-sm text-[#a34235]" role="alert">{copy.profile.techRequired}</p>}
                   </div>
                   <span id="custom-technologies-count" className="shrink-0 text-xs text-[#66736d]">{customTechnologies.length}/150</span>
@@ -274,9 +295,10 @@ export function ProfileForm() {
           </dl>
           <div className="mt-6 border-t border-[#d5ddd6] pt-5">
             <p id="generate-ticket-help" className="mb-4 text-xs leading-5 text-[#66736d]">{t("profile.limited")}</p>
-            <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} title={!isLoading && (combinedTechnologies.length === 0 || Boolean(customError)) ? copy.profile.disabledHelp : undefined} aria-describedby="generate-ticket-help" className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
-              {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />{copy.profile.creating}</> : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
+            <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} title={!isLoading && (combinedTechnologies.length === 0 || Boolean(customError)) ? (customError ?? copy.profile.disabledHelp) : undefined} aria-describedby="generate-ticket-help" className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
+              {isLoading && loadingPhase ? <><LoaderCircle aria-hidden="true" size={18} className="motion-safe:animate-spin" />{copy.profile.loading[loadingPhase]}</> : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
+            {isLoading && loadingPhase && <GenerationLoading phase={loadingPhase} copy={copy.profile.loading} />}
           </div>
         </aside>
       </form>

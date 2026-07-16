@@ -18,14 +18,22 @@ export async function postJson<T>(
   url: string,
   body: unknown,
   schema: z.ZodType<T>,
+  options: {
+    idempotencyKey?: string;
+    onPhase?: (phase: "requesting" | "validating") => void;
+  } = {},
 ): Promise<T> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 50_000);
+  const timeout = window.setTimeout(() => controller.abort(), 270_000);
 
   try {
+    options.onPhase?.("requesting");
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : {}),
+      },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -48,6 +56,7 @@ export async function postJson<T>(
       );
     }
 
+    options.onPhase?.("validating");
     const parsed = schema.safeParse(payload);
     if (!parsed.success) {
       throw new ClientApiError(

@@ -12,9 +12,10 @@ import {
 } from "@/schemas";
 import { PublicApiError } from "@/lib/api-errors";
 import { parseGeneratedTicket, parseSeniorReview } from "@/lib/ai-output";
+import { startAiGeneration } from "@/lib/ai-generation";
 
 const MODEL = "gpt-5.6";
-const REQUEST_TIMEOUT_MS = 45_000;
+export const REQUEST_TIMEOUT_MS = 240_000;
 
 function getClient() {
   if (!process.env.OPENAI_API_KEY) {
@@ -34,7 +35,9 @@ function hasRefusal(response: { output: Array<{ type: string; content?: Array<{ 
 }
 
 export async function generateTicket(profile: ProfileInput): Promise<GeneratedTicket> {
-  const response = await getClient().responses.parse({
+  const diagnostic = startAiGeneration("ticket");
+  try {
+    const response = await getClient().responses.parse({
     model: MODEL,
     instructions: [
       "You are a senior engineering manager creating one realistic work ticket for a junior developer.",
@@ -50,19 +53,28 @@ export async function generateTicket(profile: ProfileInput): Promise<GeneratedTi
     ].join(" "),
     input: JSON.stringify({ task: "Create one bilingual junior developer work ticket.", profile }),
     reasoning: { effort: "medium" },
-    max_output_tokens: 4_500,
+    max_output_tokens: 6_000,
     store: false,
     text: { format: zodTextFormat(generatedTicketSchema, "juniorflow_bilingual_ticket") },
   });
 
-  if (hasRefusal(response)) {
-    throw new PublicApiError("MODEL_REFUSAL", "The AI service could not generate this ticket. Adjust the project description and retry.", 422, false);
+    if (hasRefusal(response)) {
+      throw new PublicApiError("MODEL_REFUSAL", "The AI service could not generate this ticket. Adjust the project description and retry.", 422, false);
+    }
+    diagnostic.validation();
+    const ticket = parseGeneratedTicket(response.output_parsed);
+    diagnostic.complete();
+    return ticket;
+  } catch (error) {
+    diagnostic.fail(error);
+    throw error;
   }
-  return parseGeneratedTicket(response.output_parsed);
 }
 
 export async function generateReview(input: ReviewInput): Promise<SeniorReview> {
-  const response = await getClient().responses.parse({
+  const diagnostic = startAiGeneration("review");
+  try {
+    const response = await getClient().responses.parse({
     model: MODEL,
     instructions: [
       "You are a patient but honest senior developer reviewing a junior developer submission.",
@@ -90,13 +102,20 @@ export async function generateReview(input: ReviewInput): Promise<SeniorReview> 
       },
     }),
     reasoning: { effort: "medium" },
-    max_output_tokens: 6_000,
+    max_output_tokens: 9_000,
     store: false,
     text: { format: zodTextFormat(seniorReviewSchema, "juniorflow_bilingual_review") },
   });
 
-  if (hasRefusal(response)) {
-    throw new PublicApiError("MODEL_REFUSAL", "The AI service could not review this submission. Adjust the content and retry.", 422, false);
+    if (hasRefusal(response)) {
+      throw new PublicApiError("MODEL_REFUSAL", "The AI service could not review this submission. Adjust the content and retry.", 422, false);
+    }
+    diagnostic.validation();
+    const review = parseSeniorReview(response.output_parsed);
+    diagnostic.complete();
+    return review;
+  } catch (error) {
+    diagnostic.fail(error);
+    throw error;
   }
-  return parseSeniorReview(response.output_parsed);
 }
