@@ -6,8 +6,8 @@ describe("interface localization", () => {
     expect(Object.keys(ITALIAN_MESSAGES).sort()).toEqual(Object.keys(ENGLISH_MESSAGES).sort());
   });
 
-  it("detects Italian browsers and falls back to English", () => {
-    expect(detectLocale(["it-IT", "en-US"])).toBe("it");
+  it("defaults new visitors to English without using browser languages", () => {
+    expect(detectLocale(["it-IT", "en-US"])).toBe("en");
     expect(detectLocale(["de-DE"])).toBe("en");
     expect(normalizeLocale("IT-it")).toBe("it");
   });
@@ -15,13 +15,14 @@ describe("interface localization", () => {
   it("prefers a persisted valid choice", () => {
     expect(detectLocale(["it-IT"], "en")).toBe("en");
     expect(detectLocale(["en-US"], "it")).toBe("it");
-    expect(detectLocale(["it-IT"], "invalid")).toBe("it");
+    expect(detectLocale(["it-IT"], "invalid")).toBe("en");
   });
 
-  it("uses the locale cookie before Accept-Language for server rendering", () => {
-    expect(detectRequestLocale("it", "en-US,en;q=0.9")).toBe("it");
-    expect(detectRequestLocale(undefined, "it-IT,it;q=0.9")).toBe("it");
-    expect(detectRequestLocale("invalid", "fr-FR")).toBe("en");
+  it("uses a valid locale cookie and otherwise renders English", () => {
+    expect(detectRequestLocale("it")).toBe("it");
+    expect(detectRequestLocale("en")).toBe("en");
+    expect(detectRequestLocale(undefined)).toBe("en");
+    expect(detectRequestLocale("invalid")).toBe("en");
   });
 
   it("returns localized controls without translating technical values", () => {

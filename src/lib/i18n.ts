@@ -166,17 +166,13 @@ export function normalizeLocale(value: string | null | undefined): Locale | null
   return null;
 }
 
-export function detectLocale(languages: readonly string[], stored?: string | null): Locale {
-  return normalizeLocale(stored) ?? languages.map(normalizeLocale).find(Boolean) ?? "en";
+export function detectLocale(_languages: readonly string[], stored?: string | null): Locale {
+  return normalizeLocale(stored) ?? "en";
 }
 
 export function message(locale: Locale, key: MessageKey) {
   return locale === "it" ? ITALIAN_MESSAGES[key] : ENGLISH_MESSAGES[key];
 }
-export function detectRequestLocale(cookieValue: string | null | undefined, acceptLanguage: string | null | undefined): Locale {
-  const requested = (acceptLanguage ?? "")
-    .split(",")
-    .map((part) => part.split(";")[0]?.trim())
-    .filter((part): part is string => Boolean(part));
-  return normalizeLocale(cookieValue) ?? requested.map(normalizeLocale).find(Boolean) ?? "en";
+export function detectRequestLocale(cookieValue: string | null | undefined): Locale {
+  return normalizeLocale(cookieValue) ?? "en";
 }

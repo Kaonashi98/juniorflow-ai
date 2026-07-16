@@ -44,31 +44,47 @@ async function mockExternalBoundaries(page: Page) {
   };
 }
 
-test("global locale persists across navigation and the static demo never calls AI routes", async ({ page }) => {
+test("a clean Italian browser defaults to English and locale persists without AI calls", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "it-IT" });
+  const page = await context.newPage();
   const boundaries = await mockExternalBoundaries(page);
   const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
+  page.on("pageerror", (error) => pageErrors.push(error.message));
 
-  await page.goto("/");
+  expect(await context.cookies()).toEqual([]);
+  const response = await page.goto("/");
+  const initialHtml = await response?.text();
+  expect(initialHtml).toContain('<html lang="en"');
+  expect(initialHtml).toContain("<title>JuniorFlow AI");
+  expect(initialHtml).toContain("Your first job, before your first job</title>");
+  expect(await page.evaluate(() => localStorage.getItem("juniorflow-interface-language"))).toBeNull();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page).toHaveTitle(/Your first job/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Your first job");
 
+  await page.goto("/how-it-works");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("How JuniorFlow AI works");
+
   const locale = page.getByLabel("Interface language", { exact: true });
   await locale.selectOption("it");
+  expect(await page.evaluate(() => localStorage.getItem("juniorflow-interface-language"))).toBe("it");
   await expect(page.locator("html")).toHaveAttribute("lang", "it");
-  await expect(page).toHaveTitle(/Il tuo primo lavoro/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Il tuo primo lavoro");
+  await expect(page).toHaveTitle(/Come funziona/);
 
-  await page.reload();
+  const italianResponse = await page.reload();
+  const italianHtml = await italianResponse?.text();
+  expect(italianHtml).toContain('<html lang="it"');
+  expect(italianHtml).toContain("Come funziona | JuniorFlow AI</title>");
   await expect(page.locator("html")).toHaveAttribute("lang", "it");
-
-  await page.goto("/how-it-works");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Come funziona JuniorFlow AI");
 
   await page.goto("/demo");
+  await expect(page.locator("html")).toHaveAttribute("lang", "it");
   const demoMain = page.getByRole("main");
   await expect(demoMain.getByText("nessuna richiesta OpenAI.", { exact: false })).toBeVisible();
   await expect(page.getByText(DEMO_TICKET.content.it.title, { exact: true }).filter({ visible: true })).toBeVisible();
@@ -76,14 +92,23 @@ test("global locale persists across navigation and the static demo never calls A
   await expect(page.getByText(DEMO_REVIEW.content.it.approachAssessment, { exact: true })).toBeVisible();
 
   await page.getByLabel("Lingua dell’interfaccia", { exact: true }).selectOption("en");
+  expect(await page.evaluate(() => localStorage.getItem("juniorflow-interface-language"))).toBe("en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(demoMain.getByText("no OpenAI request is made.", { exact: false })).toBeVisible();
   await expect(page.getByText(DEMO_TICKET.content.en.title, { exact: true }).filter({ visible: true })).toBeVisible();
   await expect(page.getByText(DEMO_REVIEW.content.en.approachAssessment, { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page).toHaveTitle(/Demo ticket/);
+  await page.goto("/history");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Practice history");
   expect(boundaries.counts()).toEqual({ ticketRequests: 0, reviewRequests: 0 });
 
   const icons = await page.locator('link[rel~="icon"]').count();
   expect(icons).toBeGreaterThan(0);
   expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+  await context.close();
 });
 
 test("mocked real flow generates once, reviews once, switches locale instantly, reopens and deletes history", async ({ page }) => {

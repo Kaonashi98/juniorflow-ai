@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { Metadata } from "next";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { APP_COPY, type LocalizedPageTitle } from "@/lib/app-copy";
 import {
   detectRequestLocale,
@@ -11,11 +11,7 @@ import {
 
 export async function requestLocale(): Promise<Locale> {
   const cookieStore = await cookies();
-  const headerStore = await headers();
-  return detectRequestLocale(
-    cookieStore.get(LOCALE_COOKIE_KEY)?.value,
-    headerStore.get("accept-language"),
-  );
+  return detectRequestLocale(cookieStore.get(LOCALE_COOKIE_KEY)?.value);
 }
 
 export async function localizedPageMetadata(

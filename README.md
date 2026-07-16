@@ -20,7 +20,7 @@ The public static demo lets judges experience a complete ticket, prefilled submi
 
 - Professional, responsive English and Italian experience
 - One global language selector for the entire application
-- Browser-language detection with persisted preference
+- Explicit English default with persisted English/Italian preference
 - Front-End, Back-End, Full-Stack, and Mobile profiles
 - Internship-aware junior experience level
 - A curated technology catalog plus custom entries, with no default selection and a maximum of five technologies in total
