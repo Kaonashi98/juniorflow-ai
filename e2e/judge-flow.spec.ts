@@ -69,12 +69,14 @@ test("global locale persists across navigation and the static demo never calls A
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Come funziona JuniorFlow AI");
 
   await page.goto("/demo");
-  await expect(page.getByText("nessuna richiesta OpenAI.", { exact: false })).toBeVisible();
+  const demoMain = page.getByRole("main");
+  await expect(demoMain.getByText("nessuna richiesta OpenAI.", { exact: false })).toBeVisible();
   await expect(page.getByText(DEMO_TICKET.content.it.title, { exact: true }).filter({ visible: true })).toBeVisible();
   await page.getByRole("button", { name: "Mostra review di esempio", exact: true }).click();
   await expect(page.getByText(DEMO_REVIEW.content.it.approachAssessment, { exact: true })).toBeVisible();
 
   await page.getByLabel("Lingua dell’interfaccia", { exact: true }).selectOption("en");
+  await expect(demoMain.getByText("no OpenAI request is made.", { exact: false })).toBeVisible();
   await expect(page.getByText(DEMO_TICKET.content.en.title, { exact: true }).filter({ visible: true })).toBeVisible();
   await expect(page.getByText(DEMO_REVIEW.content.en.approachAssessment, { exact: true })).toBeVisible();
   expect(boundaries.counts()).toEqual({ ticketRequests: 0, reviewRequests: 0 });
