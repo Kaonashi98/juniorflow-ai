@@ -29,11 +29,10 @@ import type {
   SeniorReview,
   TicketSubmission,
   WorkTicket,
-  TicketLanguage,
 } from "@/types";
 import { SeniorReviewCard } from "@/components/senior-review-card";
 import { useAccess, useLanguage } from "@/components/app-providers";
-import { UI_COPY, localizedApiError } from "@/lib/ui-copy";
+import { localizedApiError } from "@/lib/ui-copy";
 import { formatSubmissionType } from "@/lib/presentation";
 
 const reviewResponseSchema = z.object({ review: seniorReviewSchema });
@@ -43,7 +42,6 @@ export function createReviewRequest(
   submission: TicketSubmission,
   sessionId: string,
   submissionRevision: number,
-  language: TicketLanguage = "English",
 ): ReviewInput {
   const { createdAt: _createdAt, isDemo: _isDemo, ...generatedTicket } = ticket;
   void _createdAt;
@@ -52,7 +50,6 @@ export function createReviewRequest(
     sessionId,
     submissionRevision,
     ticket: generatedTicket,
-    language,
     ...submission,
   });
 }
@@ -78,7 +75,6 @@ export function SolutionWorkspace({
   sessionId,
   submissionRevision,
   ticket,
-  ticketLanguage,
   initialSubmission,
   initialReview,
   onSubmission,
@@ -88,7 +84,6 @@ export function SolutionWorkspace({
   sessionId: string;
   submissionRevision: number;
   ticket: WorkTicket;
-  ticketLanguage?: TicketLanguage;
   initialSubmission?: TicketSubmission;
   initialReview?: SeniorReview;
   onSubmission?: (submission: TicketSubmission) => void;
@@ -96,9 +91,9 @@ export function SolutionWorkspace({
   onEditSubmission?: () => void;
 }) {
   const { unlocked, unlockRevision, openUnlock, dismissUnlockSuccess } = useAccess();
-  const { t, locale } = useLanguage();
-  const solutionCopy = UI_COPY[locale].solution;
-  const commonCopy = UI_COPY[locale].common;
+  const { t, locale, copy } = useLanguage();
+  const solutionCopy = copy.solution;
+  const commonCopy = copy.common;
   const initialSubmissionType =
     initialSubmission?.submissionType ?? "Pseudocode / technical plan";
   const [submissionType, setSubmissionType] =
@@ -124,7 +119,8 @@ export function SolutionWorkspace({
       setError((current) => current?.code === "ACCESS_REQUIRED" ? null : current);
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [unlockRevision]);  const formRef = useRef<HTMLFormElement>(null);
+  }, [unlockRevision]);
+  const formRef = useRef<HTMLFormElement>(null);
   const inFlight = useRef(false);
   const hasReview = Boolean(review);
 
@@ -203,7 +199,6 @@ export function SolutionWorkspace({
         parsed.data,
         sessionId,
         submissionRevision,
-        ticketLanguage,
       );
       const result = await postJson(
         "/api/reviews",
@@ -215,7 +210,7 @@ export function SolutionWorkspace({
       setHasSubmissionChanged(false);
       onReview?.(parsed.data, result.review);
     } catch (caught) {
-      setError(caught instanceof ClientApiError ? caught : new ClientApiError("The review failed. Please retry.", "UNKNOWN", true));
+      setError(caught instanceof ClientApiError ? caught : new ClientApiError(solutionCopy.unknownFailure, "UNKNOWN", true));
     } finally {
       inFlight.current = false;
       setIsReviewing(false);
@@ -376,9 +371,22 @@ export function SolutionWorkspace({
               </button>
             </div>
           ) : (
-            <button type="submit" disabled={!requestEnabled} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-5 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
-              {isReviewing ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />{solutionCopy.reviewing}</> : <>{solutionCopy.request} <ArrowRight aria-hidden="true" size={18} /></>}
-            </button>
+            <div>
+              <button
+                type="submit"
+                disabled={!requestEnabled}
+                aria-describedby={!requestEnabled && !isReviewing ? "review-disabled-help" : undefined}
+                title={!requestEnabled && !isReviewing ? solutionCopy.disabledHelp : undefined}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-5 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isReviewing ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />{solutionCopy.reviewing}</> : <>{solutionCopy.request} <ArrowRight aria-hidden="true" size={18} /></>}
+              </button>
+              {!requestEnabled && !isReviewing && (
+                <p id="review-disabled-help" className="mt-2 text-sm leading-6 text-[#66736d]">
+                  {solutionCopy.disabledHelp}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </form>
@@ -408,8 +416,8 @@ export function EditSubmissionDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const { locale } = useLanguage();
-  const copy = UI_COPY[locale];
+  const { copy } = useLanguage();
+
   const cancelRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);

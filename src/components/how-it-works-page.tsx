@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BriefcaseBusiness, FileText, Send, GraduationCap, History } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, FileText, Send, GraduationCap, History, ShieldCheck } from "lucide-react";
 import { useLanguage } from "@/components/app-providers";
 
 const steps = [
@@ -32,7 +32,8 @@ export function HowItWorksPage() {
             </li>
           ))}
         </ol>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+<section className="mt-8 flex gap-4 border border-[#dbe5c6] bg-[#f5f8ef] p-5 sm:p-6"><ShieldCheck aria-hidden="true" className="mt-0.5 shrink-0 text-[#5e7a17]" size={22} /><div><h2 className="font-semibold">{t("guide.transparency.title")}</h2><p className="mt-2 leading-7 text-[#64736d]">{t("guide.transparency.body")}</p></div></section>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link href="/simulate" className="inline-flex min-h-12 items-center justify-center gap-2 bg-[#14261f] px-6 font-semibold text-white">{t("guide.cta")}<ArrowRight aria-hidden="true" size={17} /></Link>
           <Link href="/demo" className="inline-flex min-h-12 items-center justify-center border border-[#14261f] px-6 font-semibold">{t("guide.demo")}</Link>
         </div>

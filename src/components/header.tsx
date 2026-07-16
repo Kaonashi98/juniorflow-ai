@@ -6,17 +6,17 @@ import { History, KeyRound, LoaderCircle, LockKeyhole, Sparkles } from "lucide-r
 import { useAccess, useLanguage } from "@/components/app-providers";
 
 export function Header() {
-  const { locale, setLocale, t } = useLanguage();
+  const { locale, setLocale, t, copy } = useLanguage();
   const { unlocked, checking, openUnlock, lock } = useAccess();
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#dce2dc] bg-[#f7f8f3]/95 backdrop-blur">
       <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-2 sm:px-8">
         <Link href="/" className="group flex items-center gap-2.5 font-semibold tracking-tight text-[#14261f]" aria-label={t("nav.home")}>
-          <Image src="/branding/juniorflow-ai-brand.png" alt={locale === "it" ? "Logo ufficiale JuniorFlow AI" : "Official JuniorFlow AI logo"} width={1536} height={1024} priority className="size-10 border border-[#14261f] object-contain" />
+          <Image src="/branding/juniorflow-ai-brand.png" alt={copy.common.logoAlt} width={1536} height={1024} priority className="size-10 border border-[#14261f] object-contain" />
           <span>JuniorFlow <span className="text-[#5e7a17]">AI</span></span>
         </Link>
-        <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto text-sm font-medium sm:order-2 sm:w-auto" aria-label={locale === "it" ? "Navigazione principale" : "Main navigation"}>
+        <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto text-sm font-medium sm:order-2 sm:w-auto" aria-label={t("nav.main")}>
           <Link href="/how-it-works" className="whitespace-nowrap px-2 py-2 text-[#52615b] hover:text-[#14261f]">{t("nav.guide")}</Link>
           <Link href="/history" className="inline-flex whitespace-nowrap items-center gap-1.5 px-2 py-2 text-[#52615b] hover:text-[#14261f]"><History aria-hidden="true" size={15} />{t("nav.history")}</Link>
           <Link href="/simulate" className="inline-flex whitespace-nowrap items-center gap-1.5 bg-[#14261f] px-3 py-2.5 text-white hover:bg-[#29483b]"><Sparkles aria-hidden="true" size={15} />{t("nav.start")}</Link>

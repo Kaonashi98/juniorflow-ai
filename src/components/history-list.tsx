@@ -15,31 +15,42 @@ import {
 } from "lucide-react";
 import {
   clearHistory,
+  clearObsoleteHistory,
   deleteHistoryEntry,
   loadHistory,
 } from "@/lib/history-store";
 import type { HistoryEntry, HistoryStatus } from "@/types";
 import { useLanguage } from "@/components/app-providers";
-import { UI_COPY } from "@/lib/ui-copy";
-import { formatDate, formatEstimatedTime, formatHistoryStatus, formatRole, formatSubmissionType } from "@/lib/presentation";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+
+import { formatDate, formatHistoryStatus, formatRole, formatSubmissionType } from "@/lib/presentation";
+import { ticketContent } from "@/lib/localized-content";
 
 type StatusFilter = "all" | HistoryStatus;
+type PendingDelete =
+  | { kind: "one"; entry: HistoryEntry }
+  | { kind: "all" }
+  | { kind: "obsolete" };
 
 export function HistoryList() {
-  const { locale } = useLanguage();
-  const copy = UI_COPY[locale].history;
+  const { locale, copy: appCopy } = useLanguage();
+  const copy = appCopy.history;
+
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [isReady, setIsReady] = useState(false);
   const [recovered, setRecovered] = useState(false);
+  const [obsoleteHistory, setObsoleteHistory] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const result = loadHistory();
       setEntries(result.entries);
       setRecovered(result.recoveredFromCorruption);
+      setObsoleteHistory(result.obsoleteHistoryFound);
       setStorageAvailable(result.storageAvailable);
       setIsReady(true);
     }, 0);
@@ -51,7 +62,8 @@ export function HistoryList() {
     return entries.filter((entry) => {
       const matchesText =
         !normalized ||
-        entry.ticket.title.toLowerCase().includes(normalized) ||
+        entry.ticket.content.en.title.toLowerCase().includes(normalized) ||
+        entry.ticket.content.it.title.toLowerCase().includes(normalized) ||
         entry.ticket.ticketId.toLowerCase().includes(normalized) ||
         entry.profile.role.toLowerCase().includes(normalized) ||
         entry.profile.technologies.some((item) => item.toLowerCase().includes(normalized)) ||
@@ -60,16 +72,16 @@ export function HistoryList() {
     });
   }, [entries, query, status]);
 
-  function removeEntry(entry: HistoryEntry) {
-    if (!window.confirm(copy.deleteOne.replace("{title}", entry.ticket.title))) return;
-    if (deleteHistoryEntry(entry.id)) {
-      setEntries((current) => current.filter((item) => item.id !== entry.id));
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "one" && deleteHistoryEntry(pendingDelete.entry.id)) {
+      setEntries((current) => current.filter((item) => item.id !== pendingDelete.entry.id));
+    } else if (pendingDelete.kind === "all" && clearHistory()) {
+      setEntries([]);
+    } else if (pendingDelete.kind === "obsolete" && clearObsoleteHistory()) {
+      setObsoleteHistory(false);
     }
-  }
-
-  function removeAll() {
-    if (!window.confirm(copy.deleteAll)) return;
-    if (clearHistory()) setEntries([]);
+    setPendingDelete(null);
   }
 
   if (!isReady) {
@@ -83,7 +95,12 @@ export function HistoryList() {
           {copy.storage}
         </div>
       )}
-      {recovered && (
+      {obsoleteHistory && (
+        <div role="status" className="mb-6 border border-[#ead9a7] bg-[#fffbed] p-4 text-sm text-[#795f19]">
+          <p>{copy.obsolete}</p>
+          <button type="button" onClick={() => setPendingDelete({ kind: "obsolete" })} className="mt-3 font-semibold underline underline-offset-4">{copy.clearObsolete}</button>
+        </div>
+      )}      {recovered && (
         <div role="status" className="mb-6 border border-[#ead9a7] bg-[#fffbed] p-4 text-sm text-[#795f19]">
           {copy.recovered}
         </div>
@@ -110,7 +127,7 @@ export function HistoryList() {
         </div>
         <div className="flex items-center justify-between gap-4 lg:justify-end">
           <p className="text-sm text-[#66736d]">{filteredEntries.length} {filteredEntries.length === 1 ? copy.ticket : copy.tickets}</p>
-          {entries.length > 0 && <button type="button" onClick={removeAll} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#9a4433] hover:underline"><Trash2 aria-hidden="true" size={15} />{copy.clearAll}</button>}
+          {entries.length > 0 && <button type="button" onClick={() => setPendingDelete({ kind: "all" })} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#9a4433] hover:underline"><Trash2 aria-hidden="true" size={15} />{copy.clearAll}</button>}
         </div>
       </div>
 
@@ -126,10 +143,10 @@ export function HistoryList() {
                     {entry.review && <span className="border border-[#cfe0aa] px-2 py-1 text-xs font-semibold text-[#526d14]">{entry.review.overallScore}/100</span>}
                     {entry.submission && <span className="bg-[#eef1e9] px-2 py-1 text-xs font-semibold text-[#52615b]">{formatSubmissionType(entry.submission.submissionType, locale)}</span>}
                   </div>
-                  <h2 className="mt-3 text-xl font-semibold tracking-tight group-hover:text-[#526d14]">{entry.ticket.title}</h2>
+                  <h2 className="mt-3 text-xl font-semibold tracking-tight group-hover:text-[#526d14]">{ticketContent(entry.ticket, locale).title}</h2>
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#66736d]">
                     <span className="flex items-center gap-1.5"><CalendarDays aria-hidden="true" size={15} />{formatDate(entry.ticket.createdAt, locale)}</span>
-                    <span className="flex items-center gap-1.5"><Clock3 aria-hidden="true" size={15} />{formatEstimatedTime(entry.ticket.estimatedTime, locale)}</span>
+                    <span className="flex items-center gap-1.5"><Clock3 aria-hidden="true" size={15} />{ticketContent(entry.ticket, locale).estimatedTime}</span>
                     <span>{formatRole(entry.profile.role, locale)}</span>
                   </div>
                   <p className="mt-2 text-sm text-[#66736d]">
@@ -137,7 +154,7 @@ export function HistoryList() {
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <button type="button" onClick={() => removeEntry(entry)} aria-label={copy.deleteAria.replace("{title}", entry.ticket.title)} className="inline-flex size-11 items-center justify-center border border-[#d5ddd6] text-[#8e4a3a] hover:border-[#8e4a3a]"><Trash2 aria-hidden="true" size={17} /></button>
+                  <button type="button" onClick={() => setPendingDelete({ kind: "one", entry })} aria-label={copy.deleteAria.replace("{title}", ticketContent(entry.ticket, locale).title)} className="inline-flex size-11 items-center justify-center border border-[#d5ddd6] text-[#8e4a3a] hover:border-[#8e4a3a]"><Trash2 aria-hidden="true" size={17} /></button>
                   <Link href={`/session/${entry.id}`} className="inline-flex min-h-11 items-center justify-center gap-2 border border-[#14261f] px-4 text-sm font-semibold transition-colors hover:bg-[#14261f] hover:text-white">{copy.open} <ArrowRight aria-hidden="true" size={16} /></Link>
                 </div>
               </div>
@@ -161,6 +178,21 @@ export function HistoryList() {
         <Sparkles aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-[#5e7a17]" />
         <p>{copy.local}</p>
       </div>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={copy.confirmTitle}
+        description={
+          pendingDelete?.kind === "one"
+            ? copy.deleteOne.replace("{title}", ticketContent(pendingDelete.entry.ticket, locale).title)
+            : pendingDelete?.kind === "obsolete"
+              ? copy.obsoleteConfirm
+              : copy.deleteAll
+        }
+        cancelLabel={appCopy.common.cancel}
+        confirmLabel={pendingDelete?.kind === "all" ? copy.clearAll : copy.deleteAction}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </section>
   );
 }

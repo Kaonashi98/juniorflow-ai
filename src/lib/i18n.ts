@@ -3,6 +3,7 @@ export const ENGLISH_MESSAGES = {
   "nav.history": "History",
   "nav.guide": "How it works",
   "nav.start": "Start simulation",
+  "nav.main": "Main navigation",
   "language.label": "Interface language",
   "language.english": "English",
   "language.italian": "Italiano",
@@ -42,7 +43,7 @@ export const ENGLISH_MESSAGES = {
   "guide.title": "How JuniorFlow AI works",
   "guide.intro": "Move from a junior profile to a realistic work ticket and an educational senior review in five focused steps.",
   "guide.s1.title": "Configure your profile",
-  "guide.s1.body": "Choose your role, experience, technologies, available time, ticket language, and project context.",
+  "guide.s1.body": "Choose your role, experience, technologies, available time, and project context.",
   "guide.s2.title": "Receive a work ticket",
   "guide.s2.body": "Unlock the authorized demo, then GPT-5.6 creates a realistic company task sized for your profile and available time. After unlocking, access remains valid in this browser for up to 8 hours. You will need the code again after expiry, after choosing Lock, after clearing cookies, or when using another browser or device.",
   "guide.s3.title": "Submit your reasoning",
@@ -53,10 +54,10 @@ export const ENGLISH_MESSAGES = {
   "guide.s5.body": "Sessions and reviews remain in this browser so you can reopen them from History without an account or database.",
   "guide.cta": "Configure my profile",
   "guide.demo": "Explore the public demo",
+  "guide.transparency.title": "Built and verified transparently",
+  "guide.transparency.body": "Codex supported implementation, testing, and verification. GPT-5.6 generates bilingual tickets and senior reviews validated with Structured Outputs. Submitted code is analyzed as text and is never executed. The static demo never calls OpenAI.",
   "profile.example": "Use guided example",
-  "profile.exampleHelp": "Fills a realistic junior profile without submitting it.",
-  "profile.interfaceVsTicket": "Interface language changes app controls. Ticket language controls only the generated ticket and AI review.",
-  "profile.unlockRequired": "Unlock the AI demo before generating a real ticket.",
+  "profile.exampleHelp": "Fills a realistic junior profile without submitting it.",  "profile.unlockRequired": "Unlock the AI demo before generating a real ticket.",
   "profile.step": "Step 1 of 1",
   "profile.title": "Your developer profile",
   "profile.role": "What role are you practicing?",
@@ -67,9 +68,7 @@ export const ENGLISH_MESSAGES = {
   "profile.technologies": "Technologies",
   "profile.chooseFive": "choose up to 5",
   "profile.other": "Other technologies",
-  "profile.optional": "optional",
-  "profile.ticketLanguage": "Ticket language",
-  "profile.project": "Project description",
+  "profile.optional": "optional",  "profile.project": "Project description",
   "profile.projectHelp": "Describe the product or codebase where this ticket should take place.",
   "profile.setup": "Ticket setup",
   "profile.generate": "Generate my ticket",
@@ -84,6 +83,7 @@ export const ITALIAN_MESSAGES: Record<MessageKey, string> = {
   "nav.history": "Storico",
   "nav.guide": "Come funziona",
   "nav.start": "Avvia simulazione",
+  "nav.main": "Navigazione principale",
   "language.label": "Lingua dell’interfaccia",
   "language.english": "English",
   "language.italian": "Italiano",
@@ -123,7 +123,7 @@ export const ITALIAN_MESSAGES: Record<MessageKey, string> = {
   "guide.title": "Come funziona JuniorFlow AI",
   "guide.intro": "Passa dal profilo junior a un ticket realistico e a una revisione educativa da senior in cinque passaggi mirati.",
   "guide.s1.title": "Configura il profilo",
-  "guide.s1.body": "Scegli ruolo, esperienza, tecnologie, tempo disponibile, lingua del ticket e contesto del progetto.",
+  "guide.s1.body": "Scegli ruolo, esperienza, tecnologie, tempo disponibile e contesto del progetto.",
   "guide.s2.title": "Ricevi un ticket di lavoro",
   "guide.s2.body": "Sblocca la demo autorizzata: GPT-5.6 crea una mansione aziendale realistica adatta al profilo e al tempo disponibile. Dopo lo sblocco, l'accesso resta valido su questo browser per un massimo di 8 ore. Dovrai reinserire il codice dopo la scadenza, dopo aver premuto Blocca, cancellando i cookie o utilizzando un altro browser o dispositivo.",
   "guide.s3.title": "Invia il tuo ragionamento",
@@ -134,10 +134,10 @@ export const ITALIAN_MESSAGES: Record<MessageKey, string> = {
   "guide.s5.body": "Sessioni e review restano in questo browser e possono essere riaperte dallo Storico senza account o database.",
   "guide.cta": "Configura il mio profilo",
   "guide.demo": "Esplora la demo pubblica",
+  "guide.transparency.title": "Realizzato e verificato con trasparenza",
+  "guide.transparency.body": "Codex ha supportato implementazione, test e verifica. GPT-5.6 genera ticket bilingui e review da senior validate con Structured Outputs. Il codice inviato viene analizzato come testo e non viene mai eseguito. La demo statica non chiama mai OpenAI.",
   "profile.example": "Usa esempio guidato",
-  "profile.exampleHelp": "Compila un profilo junior realistico senza inviarlo.",
-  "profile.interfaceVsTicket": "La lingua dell’interfaccia cambia i controlli dell’app. La lingua del ticket riguarda solo ticket e review generati.",
-  "profile.unlockRequired": "Sblocca la demo AI prima di generare un ticket reale.",
+  "profile.exampleHelp": "Compila un profilo junior realistico senza inviarlo.",  "profile.unlockRequired": "Sblocca la demo AI prima di generare un ticket reale.",
   "profile.step": "Passaggio 1 di 1",
   "profile.title": "Il tuo profilo sviluppatore",
   "profile.role": "Quale ruolo vuoi simulare?",
@@ -148,9 +148,7 @@ export const ITALIAN_MESSAGES: Record<MessageKey, string> = {
   "profile.technologies": "Tecnologie",
   "profile.chooseFive": "scegli fino a 5",
   "profile.other": "Altre tecnologie",
-  "profile.optional": "facoltativo",
-  "profile.ticketLanguage": "Lingua del ticket",
-  "profile.project": "Descrizione del progetto",
+  "profile.optional": "facoltativo",  "profile.project": "Descrizione del progetto",
   "profile.projectHelp": "Descrivi il prodotto o il codice su cui deve essere ambientato il ticket.",
   "profile.setup": "Configurazione ticket",
   "profile.generate": "Genera il mio ticket",
@@ -158,6 +156,7 @@ export const ITALIAN_MESSAGES: Record<MessageKey, string> = {
 };
 
 export const LOCALE_STORAGE_KEY = "juniorflow-interface-language";
+export const LOCALE_COOKIE_KEY = "juniorflow-locale";
 
 export function normalizeLocale(value: string | null | undefined): Locale | null {
   if (!value) return null;
@@ -173,4 +172,11 @@ export function detectLocale(languages: readonly string[], stored?: string | nul
 
 export function message(locale: Locale, key: MessageKey) {
   return locale === "it" ? ITALIAN_MESSAGES[key] : ENGLISH_MESSAGES[key];
+}
+export function detectRequestLocale(cookieValue: string | null | undefined, acceptLanguage: string | null | undefined): Locale {
+  const requested = (acceptLanguage ?? "")
+    .split(",")
+    .map((part) => part.split(";")[0]?.trim())
+    .filter((part): part is string => Boolean(part));
+  return normalizeLocale(cookieValue) ?? requested.map(normalizeLocale).find(Boolean) ?? "en";
 }

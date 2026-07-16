@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectLocale, ENGLISH_MESSAGES, ITALIAN_MESSAGES, message, normalizeLocale } from "@/lib/i18n";
+import { detectLocale, detectRequestLocale, ENGLISH_MESSAGES, ITALIAN_MESSAGES, message, normalizeLocale } from "@/lib/i18n";
 
 describe("interface localization", () => {
   it("keeps English and Italian dictionaries aligned", () => {
@@ -16,6 +16,12 @@ describe("interface localization", () => {
     expect(detectLocale(["it-IT"], "en")).toBe("en");
     expect(detectLocale(["en-US"], "it")).toBe("it");
     expect(detectLocale(["it-IT"], "invalid")).toBe("it");
+  });
+
+  it("uses the locale cookie before Accept-Language for server rendering", () => {
+    expect(detectRequestLocale("it", "en-US,en;q=0.9")).toBe("it");
+    expect(detectRequestLocale(undefined, "it-IT,it;q=0.9")).toBe("it");
+    expect(detectRequestLocale("invalid", "fr-FR")).toBe("en");
   });
 
   it("returns localized controls without translating technical values", () => {

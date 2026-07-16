@@ -1,124 +1,138 @@
 # JuniorFlow AI
 
-![JuniorFlow AI official logo](public/branding/juniorflow-ai-brand.png)
+![JuniorFlow AI official brand](public/branding/juniorflow-ai-brand.png)
 
-[Live demo](https://juniorflow-ai.vercel.app) · Education · OpenAI Build Week 2026
+[Live application](https://juniorflow-ai.vercel.app/) · Education · OpenAI Build Week 2026 · [MIT licensed](LICENSE)
 
-JuniorFlow AI is a first-job simulator for aspiring junior developers, created for the Education category of OpenAI Build Week 2026.
-
-It turns the gap between tutorials and real engineering work into a guided practice loop: configure a developer profile, receive a realistic company ticket, submit an approach or working code, and get an educational senior-developer review.
+JuniorFlow AI is a first-job simulator for aspiring junior developers. It recreates the complete flow of a realistic junior assignment: understand a company ticket, explain a technical approach, submit code or pseudocode, receive a senior-style review, and turn feedback into a learning plan.
 
 ## Problem and inspiration
 
-Junior developers often learn syntax without seeing the surrounding work: product context, acceptance criteria, trade-offs, code review, security feedback, and communication with a senior. JuniorFlow AI was inspired by the first weeks of a real software job, where learning happens through scoped tickets and thoughtful review.
+Many junior developers learn syntax without practicing the surrounding engineering work: product context, requirements, acceptance criteria, trade-offs, security, code review, and communication with a senior. JuniorFlow AI was inspired by the first weeks of a real software role, where progress comes from bounded tickets and thoughtful feedback rather than isolated exercises.
 
-## Solution
+## Solution and audience
 
-JuniorFlow AI simulates that workflow without requiring an employer, mentor, account, or existing repository. GPT-5.6 creates a bounded ticket matched to the learner's role, experience, stack, available time, language, and project context. A second GPT-5.6 workflow evaluates the submission against that ticket and returns structured educational feedback.
+The application gives students, bootcamp graduates, self-taught developers, and early-career engineers a guided practice loop adapted to their role, experience, technologies, available time, and project context. It is not a code runner or generic exercise generator.
 
-## Intended audience
+The public static demo lets judges experience a complete ticket, prefilled submission, and review without an access code, account, personal data, or OpenAI request. The protected simulation uses GPT-5.6 for live generation.
 
-- Students and bootcamp graduates preparing for their first developer role
-- Self-taught developers who want practice beyond tutorials
-- Junior developers rehearsing unfamiliar stacks or delivery formats
-- Educators who need realistic examples of tickets and review criteria
+## Core features
 
-## Features
-
-- Official JuniorFlow AI branding and social preview metadata
-- Responsive English/Italian interface with browser detection and a persisted preference
-- Public five-step guide and guided profile example
-- Responsive landing page and guided profile configurator
-- Front-End, Back-End, Full-Stack, and Mobile paths, including internship experience
+- Professional, responsive English and Italian experience
+- One global language selector for the entire application
+- Browser-language detection with persisted preference
+- Front-End, Back-End, Full-Stack, and Mobile profiles
+- Internship-aware junior experience level
 - Up to five predefined and five custom technologies, deduplicated case-insensitively
-- GPT-5.6 tickets with business context, requirements, acceptance criteria, likely files, hints, and common mistakes
+- Realistic GPT-5.6 tickets with context, requirements, acceptance criteria, likely files, hints, and common mistakes
 - Pseudocode/technical-plan and working-code submission modes
-- Structured senior review with scoring, bugs, security, acceptance coverage, guidance, and study skills
-- Duplicate-review protection and a confirmed edit-and-review-again workflow
-- Versioned History in `localStorage` with search, filters, reopening, and deletion
-- Separate fully bilingual English/Italian static Demo mode that never calls OpenAI
-- Temporary access-code gate backed by an eight-hour signed HttpOnly cookie
-- Vercel BotID Basic protection for unlock, ticket, and review requests
-- Loading, error, empty, recovery, and not-found states
-- Responsive layouts, keyboard review tabs, and an accessible confirmation dialog
+- GPT-5.6 senior review with score, strengths, bugs, security, acceptance coverage, explanation, ideal solution, and study plan
+- Duplicate-request protection and confirmed review-edit flow
+- Versioned browser-local History with search, filters, reopening, and accessible deletion
+- Fully bilingual static demo that never calls OpenAI
+- Loading, sanitized error, empty, recovery, rate-limit, and 404 states
+- Keyboard-operable tabs and dialogs, visible focus, reduced-motion support, and responsive layouts
+- Official JuniorFlow AI favicon, Apple Touch Icon, and web-app manifest
+
+## Global bilingual behavior
+
+English and Italiano are the only supported global languages. The header selector is the single source of truth for controls, validation, errors, dates, statuses, metadata, tickets, reviews, History, and demo content.
+
+Each live ticket is generated once as a structured object containing:
+
+- shared technical metadata such as ticket ID, priority enum, difficulty enum, technologies, and file paths;
+- semantically equivalent natural-language content in `content.en` and `content.it`.
+
+Each review follows the same pattern:
+
+- shared score and technical metadata;
+- semantically equivalent content in `content.en` and `content.it`.
+
+Changing language selects the already validated localized branch instantly. It does not call OpenAI again and never translates or changes user-written approach, code, pseudocode, difficulties, or senior question.
 
 ## Architecture
 
 ```text
 Browser
-  |-- POST /api/access/unlock -- BotID + rate limit + same-origin
-  |                               +--> server verifies temporary code
-  |                               +--> signed HttpOnly cookie (max 8 hours)
-  |-- GET  /api/access/status --- signed-cookie verification
-  |-- POST /api/access/lock ----- clears signed cookie
-  |-- POST /api/tickets --------- access + BotID + validation --> OpenAI Responses API
-  |-- POST /api/reviews --------- access + BotID + validation --> OpenAI Responses API
-  |-- /history ------------------ versioned localStorage envelope
-  +-- /demo --------------------- static sample data; no API request
+  |-- global locale -------- cookie + localStorage preference
+  |-- POST /api/access/unlock
+  |       BotID + rate limit + same-origin + secure code comparison
+  |       +--> signed HttpOnly cookie (maximum 8 hours)
+  |-- GET  /api/access/status
+  |-- POST /api/access/lock
+  |-- POST /api/tickets
+  |       access + BotID + size limit + Zod
+  |       +--> GPT-5.6 Responses API --> bilingual Structured Output
+  |-- POST /api/reviews
+  |       access + BotID + size limit + Zod + duplicate reservation
+  |       +--> GPT-5.6 Responses API --> bilingual Structured Output
+  |-- /history ------------ versioned localStorage envelope
+  +-- /demo --------------- static bilingual fixtures; no AI route
 ```
 
-Next.js App Router pages and layouts render the public application. Interactive client components manage forms and browser storage. Same-origin Route Handlers validate every request before calling the server-only OpenAI module. The browser never receives the API key or imports the OpenAI client.
+Next.js App Router renders the application. Route Handlers enforce the server boundary. The OpenAI client is imported only by `src/lib/openai.server.ts`; the browser never receives `OPENAI_API_KEY`.
 
-The application has no user accounts, identity authentication, or database. Live AI access is protected by a temporary server-verified access code and a signed session cookie. The code authorizes temporary use of the AI demo; it does not identify a user or create an account. Both AI routes reject invalid, expired, or missing signed sessions before OpenAI can be reached.
+There is no database, user account, identity authentication, analytics, or server-side storage of profiles and submissions.
 
-## Technology stack
+## Stack
 
 - Next.js 16 App Router
 - React 19
-- TypeScript with strict mode
+- TypeScript strict mode
 - Tailwind CSS 4
-- OpenAI JavaScript SDK and Responses API
+- OpenAI JavaScript SDK
+- OpenAI Responses API
 - GPT-5.6
-- Structured Outputs with Zod
+- Structured Outputs and Zod
 - Vercel BotID Basic
 - Vitest
-- `localStorage`
+- Playwright
+- browser `localStorage`
 - npm
-- Vercel-ready deployment
+- Vercel
 
-## How GPT-5.6 is used
+## Concrete use of GPT-5.6
 
-Ticket generation and senior review are separate server-side workflows in `src/lib/openai.server.ts`. Both:
+Ticket generation and review are separate server-only workflows in `src/lib/openai.server.ts`. Both workflows:
 
 - use the exact `gpt-5.6` model alias;
 - call `responses.parse`;
 - use medium reasoning effort;
 - request Structured Outputs through `zodTextFormat`;
-- validate parsed output again with shared Zod schemas;
-- set bounded output-token limits and `store: false`;
-- use a 45-second SDK timeout and disable automatic retries.
+- validate parsed results again with strict bounded Zod schemas;
+- return English and Italian in the same call;
+- require semantic equivalence and unchanged technical identifiers;
+- treat user input as untrusted data, never as instructions;
+- use bounded output limits, `store: false`, a 45-second timeout, and no automatic retry.
 
-The interface language localizes controls, document titles, and the complete static Demo fixture. The separately selected ticket language controls the language of newly generated ticket and review content. Existing saved AI content is never translated automatically.
+The review evaluates submitted text but does not execute, compile, or test code, and its prompt forbids claiming otherwise.
 
-The ticket prompt treats profile content as untrusted data and adapts scope to experience and available time. The review prompt distinguishes a technical plan from working code and uses delivery-specific evaluation criteria. GPT-5.6 does not execute or compile submitted code, and the review must not claim otherwise.
+## Concrete use of Codex
 
-## How Codex was used
-
-Codex served as the implementation and verification partner. It helped scaffold and evolve the application, align shared TypeScript and Zod contracts, implement the server-only OpenAI boundary, write regression tests, run the release checks, and inspect the local UI across desktop, tablet, and smartphone layouts. It also identified accessibility, responsive, documentation, and release-readiness issues.
-
-Codex did not replace product judgment or final validation. Changes were reviewed against explicit requirements and manual testing.
+Codex supported implementation, refactoring, typed contract alignment, regression-test creation, security checks, release verification, and responsive browser testing. It helped identify mixed-language states, obsolete storage risks, accessibility gaps, metadata issues, and favicon configuration errors.
 
 ## Human decisions
 
 Human product decisions include:
 
-- Education as the Build Week category
-- A first-job simulation instead of a generic code generator
-- GPT-5.6 with medium reasoning as the quality/latency balance
-- Separate ticket and review interactions
-- Different evaluation expectations for plans and working code
-- No user accounts, database, code execution, or hidden demo fallback; live AI access uses a temporary server-verified code and signed session cookie
-- Browser-local History for a privacy-conscious MVP
-- Confirmation before removing a completed review
-- A clearly isolated static Demo mode
+- choosing the Education category and first-job simulation problem;
+- using a complete workplace flow instead of isolated exercises;
+- supporting only English and Italian globally for this release;
+- generating both languages together instead of translating on demand;
+- keeping technical identifiers and user-authored content unchanged;
+- separating plan and working-code evaluation;
+- using browser-local History without accounts or a database;
+- protecting live AI use with a temporary server-verified code;
+- keeping the static demo completely public and AI-free;
+- requiring confirmation before destructive edits or deletion.
 
-## Local installation
+## Local setup
 
 Requirements:
 
 - Node.js 20 or newer
 - npm
-- An OpenAI API key with access to `gpt-5.6`
+- an OpenAI API key with access to GPT-5.6
 
 Install dependencies:
 
@@ -126,7 +140,7 @@ Install dependencies:
 npm install
 ```
 
-Create the local environment file on Windows:
+Create the local environment file:
 
 ```powershell
 Copy-Item .env.example .env.local
@@ -138,7 +152,7 @@ On macOS or Linux:
 cp .env.example .env.local
 ```
 
-Set all server-only credentials:
+Set server-only values:
 
 ```dotenv
 OPENAI_API_KEY=your_openai_api_key_here
@@ -146,11 +160,9 @@ DEMO_ACCESS_CODE=your_temporary_demo_access_code
 APP_SESSION_SECRET=replace_with_at_least_32_random_characters
 ```
 
-Use a randomly generated secret of at least 32 characters for APP_SESSION_SECRET. Share the temporary judge code separately and never commit it. Never prefix credentials with NEXT_PUBLIC_.
+Use a randomly generated `APP_SESSION_SECRET` of at least 32 characters. Never prefix a credential with `NEXT_PUBLIC_` and never commit `.env.local`.
 
-After a successful unlock, the dialog closes, an accessible confirmation is announced, and any stale access-required message is cleared. The user remains in control and must explicitly submit the ticket or review request; unlocking never triggers an AI call.
-
-Start the application:
+Start development:
 
 ```bash
 npm run dev
@@ -158,115 +170,99 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Project scripts
+## Scripts and tests
 
 ```bash
-npm run dev
 npm run lint
 npx tsc --noEmit
 npm test
 npm run build
-npm start
+npm run test:e2e
 npm audit --omit=dev
 ```
 
-Automated tests mock the OpenAI boundary and do not make provider API calls.
+Vitest covers schemas, API routes, access sessions, rate limiting, duplicate prevention, bilingual fixtures, locale detection, storage migration, localized presentation, visible-copy guarding, metadata assets, and component behavior.
+
+Playwright exercises the judge journey in a real Chromium browser: runtime locale switching and persistence, all public routes, static demo, protected unlock, controlled ticket and review responses, History, reopening, edit dialog, deletion, 404, favicon presence, and viewport widths of 1440, 1024, 768, 390, and 320 pixels.
+
+Automated tests mock only the external AI boundary. They do not call OpenAI.
 
 ## API behavior
 
 ### `POST /api/tickets`
 
-Accepts a strict bounded profile. Predefined technologies are limited to five, effective custom technologies to five, and the sanitized combined list to ten. It returns a validated structured ticket. Failures never silently substitute demo content.
+Accepts a strict bounded profile. Predefined technologies are limited to five, effective custom technologies to five, and the sanitized combined list to ten. It returns one validated bilingual ticket. There is no ticket-language field and no silent demo fallback.
 
 ### `POST /api/reviews`
 
-Accepts a session ID, submission revision, generated ticket, selected ticket language, delivery type, approach, code or pseudocode, difficulties, and senior question. It returns a validated structured review. Client state and a server-side revision reservation prevent accidental duplicates. Confirmed editing removes the old review, increments the revision, and preserves the ticket, profile, and submission text.
+Accepts a session ID, submission revision, bilingual ticket, delivery type, approach, code or pseudocode, difficulties, and senior question. It returns one validated bilingual review. Client state and a server-side revision reservation prevent accidental duplicates.
 
-Both endpoints require a valid signed access session, same-origin request, and successful BotID Basic check before OpenAI can run. They reject oversized or malformed requests, apply per-instance rate limits, and return sanitized errors without provider details or stack traces.
+Both endpoints require a valid access session, same-origin request, and successful BotID check. They reject oversized or malformed requests, apply per-instance rate limits, set `Cache-Control: no-store`, and return sanitized errors without provider details or stack traces.
 
-## History and persistence
+## History and migration
 
-History uses the `juniorflow-history` key and a versioned envelope:
+New History data uses `juniorflow-history` version 2:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "entries": []
 }
 ```
 
-Entries contain the profile, ticket, status, submission revision, optional submission, optional review, and timestamp. Legacy entries without newer defaulted fields are migrated by the shared schema. Invalid or unknown data is isolated and replaced with a safe empty state.
+Entries store bilingual ticket and review content plus shared metadata, profile, status, submission revision, optional user submission, and timestamps.
 
-History is local to the current browser, is not synchronized across devices, and saved session links cannot be reopened in another browser or device.
+Version 1 records are monolingual and cannot be translated faithfully without another AI call. They are therefore isolated under a legacy backup key rather than copied into the wrong language. The UI explains this in the active language and lets the user remove the obsolete backup. Corrupt data is also isolated. Neither case crashes rendering or creates a hydration mismatch.
+
+History is limited to the current browser and is not synchronized across devices. Clearing browser storage removes saved sessions.
 
 ## Security and privacy
 
-- OPENAI_API_KEY, DEMO_ACCESS_CODE, and APP_SESSION_SECRET are server-only and never use a NEXT_PUBLIC_ prefix.
+- `OPENAI_API_KEY`, `DEMO_ACCESS_CODE`, and `APP_SESSION_SECRET` remain server-only.
+- No `NEXT_PUBLIC_OPENAI_API_KEY` exists.
 - Access-code comparison uses fixed-length HMAC digests and constant-time comparison.
-- The browser receives only an HMAC-signed, expiring HttpOnly cookie; the access code is never stored in cookies or localStorage.
-- State-changing requests verify same origin, and protected AI routes use Vercel BotID Basic.
-- `.env.local` is ignored by Git; only `.env.example` is tracked.
-- No `NEXT_PUBLIC_OPENAI_API_KEY` variable is used.
-- Requests and model responses are strictly validated and length-limited.
-- Request bodies larger than 20 KB are rejected.
-- OpenAI calls use timeouts, no retries, bounded output, and `store: false`.
-- Provider errors and stack traces are mapped to safe public responses.
-- API responses are marked `no-store`.
-- Generated content is rendered as React text, never raw HTML.
-- The application has no database, authentication, analytics, or server-side profile storage.
-- Real profile, ticket, and submission content is sent to OpenAI for the requested result.
-- Demo mode uses static local data and never sends content to OpenAI.
+- The signed access cookie is HttpOnly, same-origin scoped, expiring, and contains no access code.
+- Protected mutations enforce same-origin checks, BotID, request-size limits, validation, and rate limiting.
+- OpenAI calls use timeout, no retries, bounded output, and `store: false`.
+- Provider errors and stack traces are mapped to safe public codes.
+- Generated content is rendered as React text; no model HTML is passed to `dangerouslySetInnerHTML`.
+- The static demo does not call AI routes.
+- `.env.local` is ignored by Git; `.env.example` contains placeholders only.
+- Real profile, ticket, and submission content is sent to OpenAI only when the user explicitly requests a live result.
 
 Do not submit secrets, proprietary source code, personal data, or confidential company information.
 
-## Testing
-
-The suite covers profile and technology rules; ticket, submission, review, API, and History schemas; invalid Structured Outputs; safe errors; History migration and recovery; delivery-aware reviews; completed-review locking; duplicate prevention; and review tabs.
-
-Run the release check:
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm test
-npm run build
-npm audit --omit=dev
-```
-
-No real OpenAI request is made by these commands.
-
 ## Deploying to Vercel
 
-1. Push the repository to a Git provider.
-2. Import it into Vercel.
-3. Keep the detected Next.js settings.
-4. Add OPENAI_API_KEY, DEMO_ACCESS_CODE, and APP_SESSION_SECRET in Project Settings > Environment Variables.
-5. Deploy.
-6. Smoke-test one real ticket and review.
-7. Verify Demo mode and History independently.
+1. Import the Git repository into Vercel.
+2. Keep the detected Next.js settings.
+3. Configure `OPENAI_API_KEY`, `DEMO_ACCESS_CODE`, and `APP_SESSION_SECRET` as server environment variables.
+4. Deploy the `main` branch.
+5. Verify that the deployment commit matches `origin/main`.
+6. Smoke-test both languages, the public demo, one protected live ticket and review, History, metadata, and icon routes.
 
-Never expose the key through `NEXT_PUBLIC_` or paste it into build logs.
+For the temporary judged demo, a deployment-level WAF limit for `POST /api/access/unlock`, `POST /api/tickets`, and `POST /api/reviews` is recommended in addition to the application limiter.
 
 ## Demo mode
 
-`/demo` is visibly labeled **Sample ticket / Demo mode**. Its ticket and review are static fixtures, make no OpenAI request, and are never an automatic fallback.
+`/demo` is visibly labeled as a static sample. Its bilingual ticket, prefilled solution, and review are local fixtures. It requires no access code and never sends content to OpenAI.
 
 ## Limitations
 
-- AI feedback can be incomplete or incorrect and is not a substitute for a human mentor or production review.
-- Submitted code is reviewed as text; it is not compiled, executed, or tested.
-- History exists only in the current browser and can be lost when storage is cleared.
-- Rate limits and duplicate reservations are in memory and apply per server instance; multi-instance production needs a distributed store for stronger enforcement.
-- There is no account, cross-device sync, collaboration, or recovery after local storage loss.
-- Access to `gpt-5.6` and available API credit are required.
+- AI feedback can be incomplete or incorrect and does not replace a human mentor or production review.
+- Submitted code is analyzed as text; it is not executed, compiled, or tested.
+- History can be lost when browser storage is cleared and cannot be shared across devices.
+- Rate limits and review reservations are in memory per server instance; stronger multi-instance enforcement requires a distributed store.
+- Live generation requires GPT-5.6 access, API credit, and the temporary access code.
+- English and Italian are the only supported global languages in this release.
 
 ## Future development
 
-Potential post-MVP work includes distributed rate limiting and idempotency, optional privacy-preserving exports, educator-authored rubrics, progress analytics, and an isolated code-execution sandbox. These are not part of this release candidate.
+Potential post-release work includes distributed rate limiting and idempotency, privacy-preserving exports, educator-authored rubrics, progress analytics, and an isolated code-execution sandbox. These are intentionally outside this MVP.
 
 ## OpenAI Build Week 2026
 
-JuniorFlow AI participates in OpenAI Build Week 2026 in the **Education** category. This release candidate prioritizes a complete, secure, explainable GPT-5.6 learning loop over feature breadth.
+JuniorFlow AI participates in the **Education** category of OpenAI Build Week 2026. This release prioritizes a complete, secure, explainable learning loop over feature breadth.
 
 ## License
 
@@ -274,17 +270,9 @@ Released under the [MIT License](LICENSE).
 
 ## Judge access
 
-Public pages, the bilingual guide, static demo, and browser-local History do not require a code. To evaluate live GPT-5.6 generation:
+Public pages, the guide, the static demo, and browser-local History require no code. For live GPT-5.6 generation:
 
-1. Open **Unlock AI demo** in the global header.
+1. Choose **Unlock AI demo** / **Sblocca demo AI** in the header.
 2. Enter the temporary code shared privately by the project owner.
-3. Generate a ticket and request a senior review within the eight-hour session.
-4. Use **Lock** in the header when finished.
-
-The code is verified only on the server. A valid unlock creates a signed HttpOnly cookie; it is not saved to browser storage.
-
-## Bot protection and recommended Vercel WAF rule
-
-BotID runs at the Basic level on POST /api/access/unlock, POST /api/tickets, and POST /api/reviews. The existing application-level per-instance limiter remains in place.
-
-As an additional deployment control, create a Vercel WAF rate-limit rule matching POST requests whose path matches ^/api/(access/unlock|tickets|reviews)$. A practical starting threshold for this temporary judged demo is 20 requests per IP in a 10-minute fixed window, initially observed in log mode before switching to a deny/429 action. Adjust it after reviewing legitimate traffic. WAF configuration is deployment-specific and is intentionally not stored in this repository.
+3. Generate one ticket and request a senior review during the eight-hour session.
+4. Use **Lock** / **Blocca** when finished.

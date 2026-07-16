@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
+import { localizedPageMetadata } from "@/lib/request-locale.server";
 import { SessionView } from "@/components/session-view";
 import { LocalizedDocumentTitle } from "@/components/localized-document-title";
 
-export const metadata: Metadata = {
-  title: "Work session",
-  description: "Continue a saved JuniorFlow AI ticket and review.",
-};
+export const generateMetadata = () => localizedPageMetadata("session");
 
 export default async function SessionPage({
   params,

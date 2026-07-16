@@ -18,8 +18,9 @@ import {
 } from "lucide-react";
 import type { SeniorReview, TicketSubmission } from "@/types";
 import { useLanguage } from "@/components/app-providers";
-import { UI_COPY } from "@/lib/ui-copy";
+
 import { formatSubmissionType } from "@/lib/presentation";
+import { reviewContent } from "@/lib/localized-content";
 
 const REVIEW_TABS = ["overview", "strengths", "technical", "acceptance", "learning"] as const;
 
@@ -34,8 +35,10 @@ export function SeniorReviewCard({
   submissionType?: TicketSubmission["submissionType"];
   demo?: boolean;
 }) {
-  const { locale } = useLanguage();
-  const copy = UI_COPY[locale].review;
+  const { locale, copy: appCopy } = useLanguage();
+  const copy = appCopy.review;
+
+  const content = reviewContent(review, locale);
   const [activeTab, setActiveTab] = useState<ReviewTabId>("overview");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const instanceId = useId();
@@ -132,7 +135,7 @@ export function SeniorReviewCard({
           <section>
             <h3 className="font-semibold text-[#52615b]">{copy.summary}</h3>
             <p className="mt-3 whitespace-pre-wrap leading-7 text-[#52615b]">
-              {review.approachAssessment}
+              {content.approachAssessment}
             </p>
           </section>
         </div>
@@ -142,13 +145,13 @@ export function SeniorReviewCard({
         <div className="grid gap-4 md:grid-cols-2">
           <HighlightList
             title={copy.strengths}
-            items={review.strengths}
+            items={content.strengths}
             empty={copy.emptyStrengths}
             tone="good"
           />
           <HighlightList
             title={copy.improvements}
-            items={review.improvements}
+            items={content.improvements}
             empty={copy.emptyImprovements}
             tone="warn"
           />
@@ -157,10 +160,10 @@ export function SeniorReviewCard({
 
       <ReviewPanel instanceId={instanceId} id="technical" activeTab={activeTab}>
         <div className="grid gap-7 md:grid-cols-2">
-          <ReviewList icon={Bug} title={copy.problems} items={review.problems} tone="warn" empty={copy.emptyProblems} />
-          <ReviewList icon={Target} title={copy.bugs} items={review.possibleBugs} tone="warn" empty={copy.emptyBugs} />
-          <ReviewList icon={ShieldCheck} title={copy.security} items={review.securityConcerns} tone="neutral" empty={copy.emptySecurity} />
-          <TextSection icon={Code2} title={copy.readability} text={review.readabilityAssessment} />
+          <ReviewList icon={Bug} title={copy.problems} items={content.problems} tone="warn" empty={copy.emptyProblems} />
+          <ReviewList icon={Target} title={copy.bugs} items={content.possibleBugs} tone="warn" empty={copy.emptyBugs} />
+          <ReviewList icon={ShieldCheck} title={copy.security} items={content.securityConcerns} tone="neutral" empty={copy.emptySecurity} />
+          <TextSection icon={Code2} title={copy.readability} text={content.readabilityAssessment} />
         </div>
       </ReviewPanel>
 
@@ -168,7 +171,7 @@ export function SeniorReviewCard({
         <ReviewList
           icon={ClipboardCheck}
           title={copy.acceptance}
-          items={review.acceptanceCriteriaAssessment}
+          items={content.acceptanceCriteriaAssessment}
           tone="neutral"
           empty={copy.emptyAcceptance}
         />
@@ -178,15 +181,15 @@ export function SeniorReviewCard({
         <div className="space-y-7">
           <section className="border-l-4 border-[#c8f169] bg-[#f5f8ef] p-5">
             <h3 className="flex items-center gap-2 font-semibold"><BookOpen aria-hidden="true" size={18} />{copy.education}</h3>
-            <p className="mt-3 whitespace-pre-wrap leading-7 text-[#52615b]">{review.educationalExplanation}</p>
+            <p className="mt-3 whitespace-pre-wrap leading-7 text-[#52615b]">{content.educationalExplanation}</p>
           </section>
-          <TextSection icon={Lightbulb} title={copy.ideal} text={review.conciseIdealSolution} />
-          <TextSection icon={Target} title={copy.next} text={review.recommendedNextTicket} />
+          <TextSection icon={Lightbulb} title={copy.ideal} text={content.conciseIdealSolution} />
+          <TextSection icon={Target} title={copy.next} text={content.recommendedNextTicket} />
           <section>
             <h3 className="font-semibold">{copy.skills}</h3>
-            {review.skillsToStudy.length ? (
+            {content.skillsToStudy.length ? (
               <div className="mt-3 flex flex-wrap gap-2">
-                {review.skillsToStudy.map((skill, index) => (
+                {content.skillsToStudy.map((skill, index) => (
                   <span key={skill + index} className="bg-[#eef1e9] px-3 py-1.5 text-sm font-medium">{skill}</span>
                 ))}
               </div>

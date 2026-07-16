@@ -1,10 +1,10 @@
 "use client";
 
 import { useLanguage } from "@/components/app-providers";
-import { UI_COPY } from "@/lib/ui-copy";
+
 
 export default function Loading() {
-  const { locale } = useLanguage();
+  const { copy } = useLanguage();
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 animate-pulse px-5 py-12 sm:px-8">
       <div className="h-4 w-28 bg-[#dfe5df]" />
@@ -14,7 +14,7 @@ export default function Loading() {
         <div className="h-96 border border-[#dfe5df] bg-white" />
         <div className="h-96 border border-[#dfe5df] bg-white" />
       </div>
-      <span className="sr-only">{UI_COPY[locale].pages.loading}</span>
+      <span className="sr-only">{copy.pages.loading}</span>
     </main>
   );
 }

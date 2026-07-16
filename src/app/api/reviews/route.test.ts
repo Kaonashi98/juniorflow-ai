@@ -30,7 +30,6 @@ function reviewRequest(cookie?: string, origin: string | null = "http://localhos
       sessionId: "00000000-0000-4000-8000-000000000050",
       submissionRevision: 0,
       ticket,
-      language: "English",
       submissionType: "Pseudocode / technical plan",
       approach: "A detailed technical approach covering the requested behavior.",
       code: "Check loading, error, empty, and populated states in order.",

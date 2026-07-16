@@ -21,7 +21,6 @@ describe("saved session resolution after hydration", () => {
       experience: "Junior with internship experience",
       technologies: ["React", "TypeScript"],
       availableTime: "2 hours",
-      language: "English",
       projectDescription: "A project dashboard used by a small distributed product team.",
     }, { ...DEMO_TICKET, isDemo: undefined }, "00000000-0000-4000-8000-000000000099");
     expect(upsertHistoryEntry(entry, storage)).toBe(true);

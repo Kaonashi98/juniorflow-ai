@@ -8,7 +8,6 @@ import {
   Check,
   Clock3,
   Code2,
-  Languages,
   LoaderCircle,
   PanelsTopLeft,
   RotateCcw,
@@ -19,7 +18,6 @@ import { ClientApiError, postJson } from "@/lib/api-client";
 import { createHistoryEntry, upsertHistoryEntry } from "@/lib/history-store";
 import {
   EXPERIENCE_OPTIONS,
-  LANGUAGE_OPTIONS,
   ROLE_OPTIONS,
   TECHNOLOGY_OPTIONS,
   TIME_OPTIONS,
@@ -31,9 +29,9 @@ import {
   mergeTechnologies,
   profileInputSchema,
 } from "@/schemas";
-import type { DeveloperRole, TicketLanguage } from "@/types";
-import { UI_COPY, localizedApiError } from "@/lib/ui-copy";
-import { formatExperience, formatEstimatedTime, formatRole, formatTicketLanguage, syncTicketLanguage, ticketLanguageForLocale } from "@/lib/presentation";
+import type { DeveloperRole } from "@/types";
+import { localizedApiError } from "@/lib/ui-copy";
+import { formatExperience, formatEstimatedTime, formatRole } from "@/lib/presentation";
 import { useAccess, useLanguage } from "@/components/app-providers";
 
 const ticketResponseSchema = z.object({ ticket: generatedTicketSchema });
@@ -47,34 +45,24 @@ export const GUIDED_PROFILE_EXAMPLE = {
   technologies: ["TypeScript", "React", "Node.js", "REST APIs", "PostgreSQL"],
   customTechnologies: "Docker",
   availableTime: "2 hours",
-  language: "English",
   projectDescription: "A project-management dashboard for small remote teams. Users can create projects, invite teammates, and track tasks.",
 };
 
 export function ProfileForm() {
   const router = useRouter();
-  const { t, locale } = useLanguage();
-  const copy = UI_COPY[locale];
+  const { t, locale, copy } = useLanguage();
+
   const { unlocked, unlockRevision, openUnlock, dismissUnlockSuccess } = useAccess();
   const [selectedRole, setSelectedRole] = useState<DeveloperRole>("Front-End");
   const [technologies, setTechnologies] = useState<string[]>(["React", "TypeScript"]);
   const [customTechnologies, setCustomTechnologies] = useState("");
   const [experience, setExperience] = useState("6–12 months");
   const [availableTime, setAvailableTime] = useState("2 hours");
-  const [ticketLanguage, setTicketLanguage] = useState<TicketLanguage>(() => ticketLanguageForLocale(locale));
-  const ticketLanguageManuallySelected = useRef(false);
-  const [projectDescription, setProjectDescription] = useState(GUIDED_PROFILE_EXAMPLE.projectDescription);
+  const [projectDescription, setProjectDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ClientApiError | null>(null);
   const observedUnlockRevision = useRef(unlockRevision);
   const formRef = useRef<HTMLFormElement>(null);
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setTicketLanguage((current) => syncTicketLanguage(locale, current, ticketLanguageManuallySelected.current));
-      setProjectDescription((current) => current === GUIDED_PROFILE_EXAMPLE.projectDescription || current === UI_COPY.it.profile.guidedDescription ? copy.profile.guidedDescription : current);
-    }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [locale, copy.profile.guidedDescription]);
   useEffect(() => {
     if (observedUnlockRevision.current === unlockRevision) return;
     observedUnlockRevision.current = unlockRevision;
@@ -115,8 +103,6 @@ export function ProfileForm() {
     setTechnologies(GUIDED_PROFILE_EXAMPLE.technologies);
     setCustomTechnologies(GUIDED_PROFILE_EXAMPLE.customTechnologies);
     setAvailableTime(GUIDED_PROFILE_EXAMPLE.availableTime);
-    ticketLanguageManuallySelected.current = false;
-    setTicketLanguage(ticketLanguageForLocale(locale));
     setProjectDescription(copy.profile.guidedDescription);
     setError(null);
   }
@@ -139,12 +125,11 @@ export function ProfileForm() {
       predefinedTechnologies: technologies,
       customTechnologies,
       availableTime: String(formData.get("availableTime") ?? ""),
-      language: String(formData.get("language") ?? ""),
       projectDescription: String(formData.get("projectDescription") ?? ""),
     };
     const parsed = profileInputSchema.safeParse(candidate);
     if (!parsed.success) {
-      setError(new ClientApiError(parsed.error.issues[0]?.message ?? "Check your profile.", "INVALID_INPUT", false));
+      setError(new ClientApiError(parsed.error.issues[0]?.message ?? copy.profile.invalid, "INVALID_INPUT", false));
       return;
     }
 
@@ -161,14 +146,14 @@ export function ProfileForm() {
       const entry = createHistoryEntry(parsed.data, ticket);
       if (!upsertHistoryEntry(entry)) {
         throw new ClientApiError(
-          "The ticket was created but browser storage is unavailable. Check your privacy settings and retry.",
+          copy.profile.storageFailure,
           "STORAGE_UNAVAILABLE",
           false,
         );
       }
       router.push(`/session/${entry.id}`);
     } catch (caught) {
-      setError(caught instanceof ClientApiError ? caught : new ClientApiError("Ticket generation failed. Please retry.", "UNKNOWN", true));
+      setError(caught instanceof ClientApiError ? caught : new ClientApiError(copy.profile.unknownFailure, "UNKNOWN", true));
     } finally {
       inFlight.current = false;
       setIsLoading(false);
@@ -261,12 +246,6 @@ export function ProfileForm() {
             </fieldset>
 
             <label className="block text-sm font-semibold">
-              <span className="flex items-center gap-2"><Languages aria-hidden="true" size={16} className="text-[#5e7a17]" />{t("profile.ticketLanguage")}</span>
-              <select name="language" className={fieldClass} value={ticketLanguage} onChange={(event) => { ticketLanguageManuallySelected.current = true; setTicketLanguage(event.target.value as TicketLanguage); }}>{LANGUAGE_OPTIONS.map((option) => <option key={option} value={option}>{formatTicketLanguage(option, locale)}</option>)}</select>
-              <span className="mt-2 block font-normal leading-5 text-[#66736d]">{t("profile.interfaceVsTicket")}</span>
-            </label>
-
-            <label className="block text-sm font-semibold">
               {t("profile.project")}
               <span className="mt-1 block font-normal leading-6 text-[#66736d]">{t("profile.projectHelp")}</span>
               <textarea name="projectDescription" required minLength={20} maxLength={800} rows={5} className={`${fieldClass} py-3`} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} />
@@ -294,8 +273,8 @@ export function ProfileForm() {
             <div><dt className="text-[#66736d]">{copy.common.model}</dt><dd className="mt-1 font-semibold">GPT-5.6</dd></div>
           </dl>
           <div className="mt-6 border-t border-[#d5ddd6] pt-5">
-            <p className="mb-4 text-xs leading-5 text-[#66736d]">{t("profile.limited")}</p>
-            <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
+            <p id="generate-ticket-help" className="mb-4 text-xs leading-5 text-[#66736d]">{t("profile.limited")}</p>
+            <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} title={!isLoading && (combinedTechnologies.length === 0 || Boolean(customError)) ? copy.profile.disabledHelp : undefined} aria-describedby="generate-ticket-help" className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
               {isLoading ? <><LoaderCircle aria-hidden="true" size={18} className="animate-spin" />{copy.profile.creating}</> : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
           </div>

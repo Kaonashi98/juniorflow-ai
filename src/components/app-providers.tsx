@@ -2,15 +2,17 @@
 
 import { createContext, FormEvent, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
-import { detectLocale, LOCALE_STORAGE_KEY, message, type Locale, type MessageKey } from "@/lib/i18n";
+import { LOCALE_COOKIE_KEY, LOCALE_STORAGE_KEY, type Locale, type MessageKey } from "@/lib/i18n";
+import { APP_COPY, type AppCopy } from "@/lib/app-copy";
 
 type LanguageContextValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  copy: AppCopy;
   t: (key: MessageKey) => string;
 };
 
-const LanguageContext = createContext<LanguageContextValue>({ locale: "en", setLocale: () => undefined, t: (key) => message("en", key) });
+const LanguageContext = createContext<LanguageContextValue>({ locale: "en", copy: APP_COPY.en, setLocale: () => undefined, t: (key) => APP_COPY.en.messages[key] });
 
 export function LanguageProvider({ children, initialLocale = "en" }: { children: ReactNode; initialLocale?: Locale }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
@@ -20,20 +22,18 @@ export function LanguageProvider({ children, initialLocale = "en" }: { children:
     try {
       stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
     } catch {
-      // Browser language remains available when storage is blocked.
+      // The server-detected locale remains available when storage is blocked.
     }
-    const detected = detectLocale(
-      navigator.languages?.length ? navigator.languages : [navigator.language],
-      stored,
-    );
+    const detected = stored === "en" || stored === "it" ? stored : initialLocale;
     const timeout = window.setTimeout(() => setLocaleState(detected), 0);
     document.documentElement.lang = detected;
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [initialLocale]);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     document.documentElement.lang = next;
+    document.cookie = LOCALE_COOKIE_KEY + "=" + next + "; Path=/; Max-Age=31536000; SameSite=Lax";
     try {
       window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
     } catch {
@@ -42,7 +42,7 @@ export function LanguageProvider({ children, initialLocale = "en" }: { children:
   }, []);
 
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, t: (key) => message(locale, key) }}>
+    <LanguageContext.Provider value={{ locale, copy: APP_COPY[locale], setLocale, t: (key) => APP_COPY[locale].messages[key] }}>
       {children}
     </LanguageContext.Provider>
   );

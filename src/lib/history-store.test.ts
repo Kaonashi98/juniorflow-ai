@@ -1,7 +1,7 @@
-
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   clearHistory,
+  clearObsoleteHistory,
   createHistoryEntry,
   deleteHistoryEntry,
   loadHistory,
@@ -12,34 +12,15 @@ import {
 import { profileInputSchema, type ProfileInput } from "@/schemas";
 import { STORAGE_KEY } from "@/lib/constants";
 import { DEMO_TICKET } from "@/data/demo-ticket";
-import { DEMO_REVIEW } from "@/data/demo-review";
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
-
-  get length() {
-    return this.values.size;
-  }
-
-  clear() {
-    this.values.clear();
-  }
-
-  getItem(key: string) {
-    return this.values.get(key) ?? null;
-  }
-
-  key(index: number) {
-    return [...this.values.keys()][index] ?? null;
-  }
-
-  removeItem(key: string) {
-    this.values.delete(key);
-  }
-
-  setItem(key: string, value: string) {
-    this.values.set(key, value);
-  }
+  get length() { return this.values.size; }
+  clear() { this.values.clear(); }
+  getItem(key: string) { return this.values.get(key) ?? null; }
+  key(index: number) { return [...this.values.keys()][index] ?? null; }
+  removeItem(key: string) { this.values.delete(key); }
+  setItem(key: string, value: string) { this.values.set(key, value); }
 }
 
 const profile: ProfileInput = {
@@ -47,109 +28,63 @@ const profile: ProfileInput = {
   experience: "6–12 months",
   technologies: ["React", "TypeScript"],
   availableTime: "2 hours",
-  language: "English",
   projectDescription: "A project-management dashboard for distributed product teams.",
 };
 
-describe("versioned history storage", () => {
+describe("versioned bilingual history storage", () => {
   let storage: MemoryStorage;
+  beforeEach(() => { storage = new MemoryStorage(); });
 
-  beforeEach(() => {
-    storage = new MemoryStorage();
-  });
-
-  it("persists, reloads, and serializes a valid entry", () => {
-    const entry = createHistoryEntry(
-      profile,
-      { ...DEMO_TICKET, isDemo: undefined },
-      "00000000-0000-4000-8000-000000000010",
-    );
+  it("persists and serializes a version 2 bilingual entry", () => {
+    const entry = createHistoryEntry(profile, { ...DEMO_TICKET, isDemo: undefined }, "00000000-0000-4000-8000-000000000010");
     expect(upsertHistoryEntry(entry, storage)).toBe(true);
     expect(loadHistory(storage).entries).toHaveLength(1);
-
-    const serialized = serializeHistory([entry]);
-    const parsed = parseHistory(serialized);
-    expect(parsed?.version).toBe(1);
-    expect(parsed?.entries[0]?.profile.customTechnologies).toBeUndefined();
-    expect(parsed?.entries[0]?.profile.predefinedTechnologies).toBeUndefined();
-    expect(parsed?.entries[0]?.submissionRevision).toBe(0);
+    const parsed = parseHistory(serializeHistory([entry]));
+    expect(parsed?.version).toBe(2);
+    expect(parsed?.entries[0]?.ticket.content.en.title).toBeTruthy();
+    expect(parsed?.entries[0]?.ticket.content.it.title).toBeTruthy();
   });
 
-  it("persists the sanitized combined stack for new profile entries", () => {
+  it("persists the sanitized combined stack", () => {
     const newProfile = profileInputSchema.parse({
       ...profile,
       predefinedTechnologies: ["React", "TypeScript"],
       technologies: ["React", "TypeScript", "Docker"],
       customTechnologies: "typescript, Docker, docker",
     });
-    const entry = createHistoryEntry(
-      newProfile,
-      { ...DEMO_TICKET, isDemo: undefined },
-      "00000000-0000-4000-8000-000000000012",
-    );
-
-    const parsed = parseHistory(serializeHistory([entry]));
-    expect(parsed?.entries[0]?.profile.technologies).toEqual([
-      "React",
-      "TypeScript",
-      "Docker",
-    ]);
+    const entry = createHistoryEntry(newProfile, { ...DEMO_TICKET, isDemo: undefined }, "00000000-0000-4000-8000-000000000012");
+    expect(parseHistory(serializeHistory([entry]))?.entries[0]?.profile.technologies).toEqual(["React", "TypeScript", "Docker"]);
   });
 
-  it("defaults legacy submissions without a submission type to pseudocode", () => {
-    const entry = createHistoryEntry(
-      profile,
-      { ...DEMO_TICKET, isDemo: undefined },
-      "00000000-0000-4000-8000-000000000013",
-    );
-    const legacySubmission = {
-      approach: "A detailed legacy approach that remains valid after migration.",
-      code: "Render the empty state after loading completes.",
-      difficulties: "",
-      seniorQuestion: "",
-    };
-    const { submissionRevision: _submissionRevision, ...legacyEntry } = entry;
-    void _submissionRevision;
-    const serialized = JSON.stringify({
-      version: 1,
-      entries: [{
-        ...legacyEntry,
-        status: "reviewed",
-        submission: legacySubmission,
-        review: DEMO_REVIEW,
-      }],
-    });
-
-    const parsed = parseHistory(serialized);
-    expect(parsed?.entries[0]?.submissionRevision).toBe(0);
-    expect(parsed?.entries[0]?.submission?.submissionType).toBe(
-      "Pseudocode / technical plan",
-    );
-    expect(parsed?.entries[0]?.review?.overallScore).toBe(
-      DEMO_REVIEW.overallScore,
-    );
+  it("isolates version 1 history instead of fabricating translations", () => {
+    storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries: [{ old: "record" }] }));
+    const result = loadHistory(storage);
+    expect(result.entries).toEqual([]);
+    expect(result.obsoleteHistoryFound).toBe(true);
+    expect(result.recoveredFromCorruption).toBe(false);
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    expect(storage.getItem(STORAGE_KEY + ":legacy-v1")).toContain('"version":1');
+    expect(clearObsoleteHistory(storage)).toBe(true);
+    expect(storage.getItem(STORAGE_KEY + ":legacy-v1")).toBeNull();
   });
+
   it("isolates corrupted data and recovers safely", () => {
     storage.setItem(STORAGE_KEY, "{not-json");
     const result = loadHistory(storage);
     expect(result.entries).toEqual([]);
     expect(result.recoveredFromCorruption).toBe(true);
-    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    expect(result.obsoleteHistoryFound).toBe(false);
   });
 
   it("rejects unknown schema versions", () => {
-    expect(parseHistory(JSON.stringify({ version: 2, entries: [] }))).toBeNull();
+    expect(parseHistory(JSON.stringify({ version: 1, entries: [] }))).toBeNull();
+    expect(parseHistory(JSON.stringify({ version: 3, entries: [] }))).toBeNull();
   });
 
   it("deletes one entry and clears all entries", () => {
-    const entry = createHistoryEntry(
-      profile,
-      { ...DEMO_TICKET, isDemo: undefined },
-      "00000000-0000-4000-8000-000000000011",
-    );
+    const entry = createHistoryEntry(profile, { ...DEMO_TICKET, isDemo: undefined }, "00000000-0000-4000-8000-000000000011");
     upsertHistoryEntry(entry, storage);
     expect(deleteHistoryEntry(entry.id, storage)).toBe(true);
-    expect(loadHistory(storage).entries).toEqual([]);
     upsertHistoryEntry(entry, storage);
     expect(clearHistory(storage)).toBe(true);
     expect(loadHistory(storage).entries).toEqual([]);

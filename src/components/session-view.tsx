@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, FileQuestion, HardDrive, LoaderCircle } from "lucide-react";
 import { useLanguage } from "@/components/app-providers";
-import { UI_COPY } from "@/lib/ui-copy";
-import { formatDateTime, formatHistoryStatus, formatSubmissionType, formatTicketLanguage } from "@/lib/presentation";
+
+import { formatDateTime, formatHistoryStatus, formatSubmissionType } from "@/lib/presentation";
 import {
   getHistoryEntry,
   upsertHistoryEntry,
@@ -36,8 +36,9 @@ export function resolveSavedSession(id: string, storage?: Storage) {
 }
 
 export function SessionView({ id }: { id: string }) {
-  const { t, locale } = useLanguage();
-  const copy = UI_COPY[locale].session;
+  const { t, locale, copy: appCopy } = useLanguage();
+  const copy = appCopy.session;
+
   const [entry, setEntry] = useState<HistoryEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [storageError, setStorageError] = useState(false);
@@ -110,7 +111,7 @@ export function SessionView({ id }: { id: string }) {
             <p className="mt-1 text-sm text-[#66736d]">{copy.stack}: <span className="font-semibold text-[#14261f]">{entry.profile.technologies.join(", ")}</span></p>
             {entry.submission && <p className="mt-1 text-sm text-[#66736d]">{copy.submission}: <span className="font-semibold text-[#14261f]">{formatSubmissionType(entry.submission.submissionType, locale)}</span></p>}
           </div>
-          <div className="text-sm text-[#66736d] sm:text-right"><p>{copy.saved} {formatDateTime(entry.savedAt, locale)}</p><p className="mt-2 inline-flex bg-[#eef8d6] px-2.5 py-1 text-[#476013]"><span className="mr-1 font-semibold">{copy.ticketLanguage}:</span> {formatTicketLanguage(entry.profile.language, locale)}</p></div>
+          <div className="text-sm text-[#66736d] sm:text-right"><p>{copy.saved} {formatDateTime(entry.savedAt, locale)}</p></div>
         </div>
       </div>
 
@@ -123,15 +124,12 @@ export function SessionView({ id }: { id: string }) {
         </div>
       )}
 
-      {((locale === "it" && entry.profile.language !== "Italian") || (locale === "en" && entry.profile.language !== "English")) && <div className="border-b border-[#dbe5c6] bg-[#f7faef]"><p className="mx-auto max-w-7xl px-5 py-3 text-sm text-[#52615b] sm:px-8">{copy.mismatch.replace("{language}", formatTicketLanguage(entry.profile.language, locale))}</p></div>}
-
       <div className="mx-auto grid max-w-7xl gap-7 px-5 py-8 sm:px-8 sm:py-12 xl:grid-cols-[minmax(0,1.16fr)_minmax(380px,0.84fr)] xl:items-start">
         <TicketDetails ticket={entry.ticket} />
         <SolutionWorkspace
           sessionId={entry.id}
           submissionRevision={entry.submissionRevision}
           ticket={entry.ticket}
-          ticketLanguage={entry.profile.language}
           initialSubmission={entry.submission}
           initialReview={entry.review}
           onSubmission={saveSubmission}

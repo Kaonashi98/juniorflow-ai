@@ -3,27 +3,30 @@
 import { AlertTriangle, CheckCircle2, Clock3, Code2, FileCode2, Flag, Lightbulb, Target } from "lucide-react";
 import { useLanguage } from "@/components/app-providers";
 import type { WorkTicket } from "@/types";
-import { UI_COPY } from "@/lib/ui-copy";
-import { formatDifficulty, formatEstimatedTime, formatPriority } from "@/lib/presentation";
+
+import { formatDifficulty, formatPriority } from "@/lib/presentation";
+import { ticketContent } from "@/lib/localized-content";
 
 export function TicketDetails({ ticket }: { ticket: WorkTicket }) {
-  const { locale } = useLanguage();
-  const copy = UI_COPY[locale].ticket;
+  const { locale, copy: appCopy } = useLanguage();
+  const copy = appCopy.ticket;
+
+  const content = ticketContent(ticket, locale);
   return (
     <article className="min-w-0 border border-[#d5ddd6] bg-white">
       <header className="border-b border-[#dfe5df] p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">{ticket.isDemo && <span className="bg-[#c8f169] px-2.5 py-1 text-xs font-bold tracking-wide text-[#14261f]">{copy.sample}</span>}<span className="border border-[#d5ddd6] px-2.5 py-1 font-mono text-xs text-[#64736d]">{ticket.ticketId}</span></div>
-        <h1 className="mt-5 text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl">{ticket.title}</h1>
-        <div className="mt-6 grid gap-3 sm:grid-cols-3"><Meta icon={Flag} label={copy.priority} value={formatPriority(ticket.priority, locale)} /><Meta icon={Target} label={copy.difficulty} value={formatDifficulty(ticket.difficulty, locale)} /><Meta icon={Clock3} label={copy.estimated} value={formatEstimatedTime(ticket.estimatedTime, locale)} /></div>
+        <h1 className="mt-5 text-3xl font-semibold leading-tight tracking-[-0.035em] sm:text-4xl">{content.title}</h1>
+        <div className="mt-6 grid gap-3 sm:grid-cols-3"><Meta icon={Flag} label={copy.priority} value={formatPriority(ticket.priority, locale)} /><Meta icon={Target} label={copy.difficulty} value={formatDifficulty(ticket.difficulty, locale)} /><Meta icon={Clock3} label={copy.estimated} value={content.estimatedTime} /></div>
       </header>
       <div className="space-y-9 p-6 sm:p-8">
-        <Section title={copy.context}><p>{ticket.companyContext}</p></Section>
-        <Section title={copy.problem}><p>{ticket.problem}</p></Section>
-        <section className="border-l-4 border-[#c8f169] bg-[#f5f8ef] p-5"><h2 className="flex items-center gap-2 font-semibold"><Target aria-hidden="true" size={18} />{copy.objective}</h2><p className="mt-2 leading-7 text-[#52615b]">{ticket.objective}</p></section>
-        <div className="grid gap-8 md:grid-cols-2"><Section title={copy.requirements}><BulletList items={ticket.requirements} /></Section><Section title={copy.acceptance}><ul className="space-y-3">{ticket.acceptanceCriteria.map((item) => <li key={item} className="flex gap-3"><CheckCircle2 aria-hidden="true" size={18} className="mt-1 shrink-0 text-[#5e7a17]" /><span>{item}</span></li>)}</ul></Section></div>
+        <Section title={copy.context}><p>{content.companyContext}</p></Section>
+        <Section title={copy.problem}><p>{content.problem}</p></Section>
+        <section className="border-l-4 border-[#c8f169] bg-[#f5f8ef] p-5"><h2 className="flex items-center gap-2 font-semibold"><Target aria-hidden="true" size={18} />{copy.objective}</h2><p className="mt-2 leading-7 text-[#52615b]">{content.objective}</p></section>
+        <div className="grid gap-8 md:grid-cols-2"><Section title={copy.requirements}><BulletList items={content.requirements} /></Section><Section title={copy.acceptance}><ul className="space-y-3">{content.acceptanceCriteria.map((item) => <li key={item} className="flex gap-3"><CheckCircle2 aria-hidden="true" size={18} className="mt-1 shrink-0 text-[#5e7a17]" /><span>{item}</span></li>)}</ul></Section></div>
         <Section title={copy.technologies}><div className="flex flex-wrap gap-2">{ticket.technologies.map((item) => <span key={item} className="inline-flex items-center gap-1.5 border border-[#d5ddd6] bg-[#f7f8f3] px-3 py-1.5 text-sm font-medium"><Code2 aria-hidden="true" size={14} />{item}</span>)}</div></Section>
         <Section title={copy.files}><div className="space-y-2">{ticket.likelyFiles.map((item) => <code key={item} className="flex items-center gap-2 overflow-x-auto bg-[#14261f] px-3 py-2.5 text-sm text-[#dff1bb]"><FileCode2 aria-hidden="true" size={15} className="shrink-0" />{item}</code>)}</div></Section>
-        <section className="grid gap-4 md:grid-cols-2"><div className="border border-[#dbe5c6] bg-[#f7faef] p-5"><h2 className="flex items-center gap-2 font-semibold"><Lightbulb aria-hidden="true" size={18} className="text-[#5e7a17]" />{copy.hint}</h2><p className="mt-3 leading-7 text-[#5d6c66]">{ticket.initialHint}</p></div><div className="border border-[#eadbd2] bg-[#fdf8f5] p-5"><h2 className="flex items-center gap-2 font-semibold"><AlertTriangle aria-hidden="true" size={18} className="text-[#b45f3e]" />{copy.mistakes}</h2><BulletList items={ticket.commonMistakes} /></div></section>
+        <section className="grid gap-4 md:grid-cols-2"><div className="border border-[#dbe5c6] bg-[#f7faef] p-5"><h2 className="flex items-center gap-2 font-semibold"><Lightbulb aria-hidden="true" size={18} className="text-[#5e7a17]" />{copy.hint}</h2><p className="mt-3 leading-7 text-[#5d6c66]">{content.initialHint}</p></div><div className="border border-[#eadbd2] bg-[#fdf8f5] p-5"><h2 className="flex items-center gap-2 font-semibold"><AlertTriangle aria-hidden="true" size={18} className="text-[#b45f3e]" />{copy.mistakes}</h2><BulletList items={content.commonMistakes} /></div></section>
       </div>
     </article>
   );

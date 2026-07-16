@@ -4,14 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, BriefcaseBusiness, Check, Code2, FileText, MessageSquareCode, Sparkles, Timer } from "lucide-react";
 import { useLanguage } from "@/components/app-providers";
-import { LANDING_COPY } from "@/lib/landing-copy";
+
 import { formatDifficulty, formatEstimatedTime } from "@/lib/presentation";
 
 const stepIcons = [BriefcaseBusiness, FileText, MessageSquareCode];
 
 export function LandingPage() {
-  const { locale } = useLanguage();
-  const copy = LANDING_COPY[locale];
+  const { locale, copy: appCopy } = useLanguage();
+  const copy = appCopy.landing;
   return (
     <main>
       <section className="relative overflow-hidden border-b border-[#dce2dc]">

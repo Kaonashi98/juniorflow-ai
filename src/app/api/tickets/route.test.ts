@@ -29,7 +29,6 @@ function request(cookie?: string, origin: string | null = "http://localhost") {
       customTechnologies: "Docker",
       technologies: ["TypeScript", "React", "Docker"],
       availableTime: "2 hours",
-      language: "English",
       projectDescription: "A project dashboard used by small distributed product teams.",
     }),
   });
