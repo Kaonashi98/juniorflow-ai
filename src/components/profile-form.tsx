@@ -8,7 +8,6 @@ import {
   Check,
   Clock3,
   Code2,
-  LoaderCircle,
   PanelsTopLeft,
   RotateCcw,
   UserRound,
@@ -34,7 +33,7 @@ import type { DeveloperRole } from "@/types";
 import { localizedApiError } from "@/lib/ui-copy";
 import { formatExperience, formatEstimatedTime, formatRole } from "@/lib/presentation";
 import { useAccess, useLanguage } from "@/components/app-providers";
-import { GenerationLoading, type GenerationPhase } from "@/components/generation-loading";
+import { GenerationLoading, type GenerationPhase, waitForProgressPaint } from "@/components/generation-loading";
 
 const ticketResponseSchema = z.object({ ticket: generatedTicketSchema });
 
@@ -155,9 +154,10 @@ export function ProfileForm() {
     try {
       const result = await postJson("/api/tickets", parsed.data, ticketResponseSchema, {
         idempotencyKey: ticketAttempt.current.key,
-        onPhase: (phase) => setLoadingPhase(phase === "requesting" ? "creating" : "validating"),
+        onPhase: (phase) => {
+          if (phase === "requesting") setLoadingPhase("creating");
+        },
       });
-      setLoadingPhase("saving");
       const ticket = {
         ...result.ticket,
         createdAt: new Date().toISOString(),
@@ -171,6 +171,8 @@ export function ProfileForm() {
         );
       }
       ticketAttempt.current = null;
+      setLoadingPhase("ready");
+      await waitForProgressPaint();
       router.push(`/session/${entry.id}`);
     } catch (caught) {
       setError(caught instanceof ClientApiError ? caught : new ClientApiError(copy.profile.unknownFailure, "UNKNOWN", true));
@@ -295,8 +297,8 @@ export function ProfileForm() {
           </dl>
           <div className="mt-6 border-t border-[#d5ddd6] pt-5">
             <p id="generate-ticket-help" className="mb-4 text-xs leading-5 text-[#66736d]">{t("profile.limited")}</p>
-            <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} title={!isLoading && (combinedTechnologies.length === 0 || Boolean(customError)) ? (customError ?? copy.profile.disabledHelp) : undefined} aria-describedby="generate-ticket-help" className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
-              {isLoading && loadingPhase ? <><LoaderCircle aria-hidden="true" size={18} className="motion-safe:animate-spin" />{copy.profile.loading[loadingPhase]}</> : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
+            <button type="submit" disabled={isLoading || combinedTechnologies.length === 0 || Boolean(customError)} aria-busy={isLoading} title={!isLoading && (combinedTechnologies.length === 0 || Boolean(customError)) ? (customError ?? copy.profile.disabledHelp) : undefined} aria-describedby="generate-ticket-help" className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-4 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60">
+              {isLoading && loadingPhase ? copy.profile.generating : <>{t("profile.generate")} <ArrowRight aria-hidden="true" size={18} /></>}
             </button>
             {isLoading && loadingPhase && <GenerationLoading phase={loadingPhase} copy={copy.profile.loading} />}
           </div>

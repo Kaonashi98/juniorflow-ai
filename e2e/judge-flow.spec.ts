@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { DEMO_REVIEW } from "../src/data/demo-review";
-import { DEMO_TICKET } from "../src/data/demo-ticket";
+import { DEMO_HISTORY, DEMO_TICKET } from "../src/data/demo-ticket";
+import { serializeHistory } from "../src/lib/history-store";
 
 const { createdAt: _createdAt, isDemo: _isDemo, ...generatedTicket } = DEMO_TICKET;
 void _createdAt;
@@ -27,14 +28,14 @@ async function mockExternalBoundaries(page: Page) {
     expect(route.request().headers()["idempotency-key"]).toMatch(/^[0-9a-f-]{36}$/i);
     const payload = route.request().postDataJSON() as Record<string, unknown>;
     expect(payload).not.toHaveProperty("language");
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await new Promise((resolve) => setTimeout(resolve, 750));
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ticket: generatedTicket }) });
   });
   await page.route("**/api/reviews", async (route) => {
     reviewRequests += 1;
     const payload = route.request().postDataJSON() as Record<string, unknown>;
     expect(payload).not.toHaveProperty("language");
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await new Promise((resolve) => setTimeout(resolve, 750));
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ review: DEMO_REVIEW }) });
   });
 
@@ -103,9 +104,20 @@ test("mocked real flow generates once, reviews once, switches locale instantly, 
   await page.getByRole("button", { name: "Unlock AI features", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 
-  await generateButton.click();
-  await expect(page.getByRole("button", { name: "GPT-5.6 is creating the bilingual ticket…", exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    const target = window as unknown as { __progressPhases: string[] };
+    target.__progressPhases = [];
+    new MutationObserver(() => {
+      const value = document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuetext");
+      if (value && !target.__progressPhases.includes(value)) target.__progressPhases.push(value);
+    }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true });
+  });
+  const generationClick = generateButton.click();
+  await expect(page.getByRole("button", { name: "Generating…", exact: true })).toBeVisible();
+  await expect(page.getByText("GPT-5.6 is creating your bilingual ticket…", { exact: true })).toBeVisible();
+  await generationClick;
   await expect(page).toHaveURL(/\/session\//);
+  expect(await page.evaluate(() => (window as unknown as { __progressPhases: string[] }).__progressPhases)).toContain("Ticket ready.");
   await expect(page.getByText(DEMO_TICKET.content.en.title, { exact: true })).toBeVisible();
   expect(boundaries.counts().ticketRequests).toBe(1);
 
@@ -116,9 +128,15 @@ test("mocked real flow generates once, reviews once, switches locale instantly, 
     "function EmptyState() { return isEmpty ? <EmptyStateCard /> : <ProjectGrid />; }",
   );
   const reviewButton = page.getByRole("button", { name: "Request senior review", exact: true });
-  await reviewButton.click();
-  await expect(page.getByRole("button", { name: "GPT-5.6 is creating the bilingual review…", exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    (window as unknown as { __progressPhases: string[] }).__progressPhases = [];
+  });
+  const reviewClick = reviewButton.click();
+  await expect(page.getByRole("button", { name: "Generating…", exact: true })).toBeVisible();
+  await expect(page.getByText("GPT-5.6 is creating your bilingual review…", { exact: true })).toBeVisible();
+  await reviewClick;
   await expect(page.getByText(DEMO_REVIEW.content.en.approachAssessment, { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __progressPhases: string[] }).__progressPhases)).toContain("Review ready.");
   expect(boundaries.counts().reviewRequests).toBe(1);
 
   await page.getByLabel("Interface language", { exact: true }).selectOption("it");
@@ -240,4 +258,64 @@ test("404 and mobile layouts remain localized and do not overflow horizontally",
   await expect(page).toHaveTitle("Pagina non trovata | JuniorFlow AI");
   const favicon = await page.locator('link[rel~="icon"][type="image/x-icon"]').getAttribute("href");
   expect(favicon).toBeTruthy();
+});
+
+test("History supports multiple tickets, filters, cancellation, and compact viewports", async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  const first = DEMO_HISTORY[0];
+  const second = {
+    ...first,
+    id: "00000000-0000-4000-8000-000000000002",
+    savedAt: "2026-07-16T09:30:00.000Z",
+    status: "reviewed" as const,
+    profile: { ...first.profile, role: "Back-End" as const, technologies: ["Node.js", "PostgreSQL"] },
+    ticket: {
+      ...first.ticket,
+      ticketId: "JF-4096",
+      technologies: ["Node.js", "PostgreSQL"],
+      content: {
+        en: { ...first.ticket.content.en, title: "Add a project activity endpoint" },
+        it: { ...first.ticket.content.it, title: "Aggiungi un endpoint per le attività del progetto" },
+      },
+    },
+    submission: {
+      submissionType: "Pseudocode / technical plan" as const,
+      approach: "Validate the request, query authorized activity, and cover pagination.",
+      code: "GET /projects/:id/activity with authorization and cursor pagination.",
+      difficulties: "",
+      seniorQuestion: "",
+    },
+    review: DEMO_REVIEW,
+  };
+  const value = serializeHistory([first, second]);
+  await page.addInitScript(({ stored }) => localStorage.setItem("juniorflow-history", stored), { stored: value });
+  await page.goto("/history");
+  await expect(page.getByText("2 tickets", { exact: true })).toBeVisible();
+
+  const search = page.getByLabel("Search tickets", { exact: true });
+  await search.fill("JF-4096");
+  await expect(page.getByText("Add a project activity endpoint", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 ticket", { exact: true })).toBeVisible();
+  await search.fill("PostgreSQL");
+  await expect(page.getByText("1 ticket", { exact: true })).toBeVisible();
+  await page.getByRole("combobox", { name: "Status", exact: true }).selectOption("reviewed");
+  await expect(page.getByText("1 ticket", { exact: true })).toBeVisible();
+  await search.fill("no-matching-ticket");
+  await expect(page.getByText("No tickets match your filters", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters", exact: true }).click();
+  await expect(page.getByText("2 tickets", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Delete Add a project activity endpoint", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByText("2 tickets", { exact: true })).toBeVisible();
+
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  }
+  expect(consoleErrors).toEqual([]);
 });

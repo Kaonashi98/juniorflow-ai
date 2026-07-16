@@ -10,7 +10,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   Check,
-  LoaderCircle,
   MessageCircleQuestion,
   Pencil,
   RotateCcw,
@@ -34,7 +33,7 @@ import { SeniorReviewCard } from "@/components/senior-review-card";
 import { useAccess, useLanguage } from "@/components/app-providers";
 import { localizedApiError } from "@/lib/ui-copy";
 import { formatSubmissionType } from "@/lib/presentation";
-import { GenerationLoading, type GenerationPhase } from "@/components/generation-loading";
+import { GenerationLoading, type GenerationPhase, waitForProgressPaint } from "@/components/generation-loading";
 
 const reviewResponseSchema = z.object({ review: seniorReviewSchema });
 
@@ -88,7 +87,7 @@ export function SolutionWorkspace({
   initialSubmission?: TicketSubmission;
   initialReview?: SeniorReview;
   onSubmission?: (submission: TicketSubmission) => void;
-  onReview?: (submission: TicketSubmission, review: SeniorReview) => void;
+  onReview?: (submission: TicketSubmission, review: SeniorReview) => boolean | void;
   onEditSubmission?: () => void;
 }) {
   const { unlocked, unlockRevision, openUnlock, dismissUnlockSuccess } = useAccess();
@@ -207,13 +206,20 @@ export function SolutionWorkspace({
         "/api/reviews",
         reviewRequest,
         reviewResponseSchema,
-        { onPhase: (phase) => setLoadingPhase(phase === "requesting" ? "creating" : "validating") },
+        { onPhase: (phase) => {
+          if (phase === "requesting") setLoadingPhase("creating");
+        } },
       );
-      setLoadingPhase("saving");
-      setReview(result.review);
+
       setReviewSubmissionType(parsed.data.submissionType);
       setHasSubmissionChanged(false);
-      onReview?.(parsed.data, result.review);
+      const reviewSaved = onReview?.(parsed.data, result.review) ?? true;
+      if (!reviewSaved) {
+        throw new ClientApiError(solutionCopy.unknownFailure, "STORAGE_UNAVAILABLE", false);
+      }
+      setLoadingPhase("ready");
+      await waitForProgressPaint();
+      setReview(result.review);
     } catch (caught) {
       setError(caught instanceof ClientApiError ? caught : new ClientApiError(solutionCopy.unknownFailure, "UNKNOWN", true));
     } finally {
@@ -381,11 +387,12 @@ export function SolutionWorkspace({
               <button
                 type="submit"
                 disabled={!requestEnabled}
+                aria-busy={isReviewing}
                 aria-describedby={!requestEnabled && !isReviewing ? "review-disabled-help" : undefined}
                 title={!requestEnabled && !isReviewing ? solutionCopy.disabledHelp : undefined}
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#14261f] px-5 font-semibold text-white transition-colors hover:bg-[#29483b] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isReviewing && loadingPhase ? <><LoaderCircle aria-hidden="true" size={18} className="motion-safe:animate-spin" />{solutionCopy.loading[loadingPhase]}</> : <>{solutionCopy.request} <ArrowRight aria-hidden="true" size={18} /></>}
+                {isReviewing && loadingPhase ? solutionCopy.generating : <>{solutionCopy.request} <ArrowRight aria-hidden="true" size={18} /></>}
               </button>
               {isReviewing && loadingPhase && <GenerationLoading phase={loadingPhase} copy={solutionCopy.loading} />}
               {!requestEnabled && !isReviewing && (

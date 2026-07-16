@@ -52,8 +52,13 @@ export function SessionView({ id }: { id: string }) {
   }, [id]);
 
   function persist(next: HistoryEntry) {
+    if (!upsertHistoryEntry(next)) {
+      setStorageError(true);
+      return false;
+    }
     setEntry(next);
-    if (!upsertHistoryEntry(next)) setStorageError(true);
+    setStorageError(false);
+    return true;
   }
 
   function saveSubmission(submission: TicketSubmission) {
@@ -67,8 +72,8 @@ export function SessionView({ id }: { id: string }) {
   }
 
   function saveReview(submission: TicketSubmission, review: SeniorReview) {
-    if (!entry) return;
-    persist({
+    if (!entry) return false;
+    return persist({
       ...entry,
       submission,
       review,

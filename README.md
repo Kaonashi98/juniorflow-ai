@@ -190,7 +190,9 @@ Automated tests mock only the external AI boundary. They do not call OpenAI. A r
 
 ## Generation reliability and manual verification
 
-Ticket and review generation use a synchronous request because background Responses require temporary provider-side state for polling, which would conflict with this release's `store: false` data-minimization decision. The UI exposes only real phases: request preparation, provider generation, response validation, and local session saving. It shows elapsed time without fabricated percentages, blocks duplicate submission, preserves form data on failure, and offers a controlled retry with the same idempotency key.
+Ticket and review generation use a synchronous request to keep the implementation small, match the current request/response architecture, avoid polling, and preserve the existing security model. The UI exposes only client-observable states: request preparation, provider generation, and a ready state reached after validated output has been saved locally. It shows elapsed time without fabricated percentages, blocks duplicate submission, preserves form data on failure, and offers a controlled retry with the same idempotency key.
+
+A production smoke test on commit `819e08b09f2a27225102dbd09fb224a556a8aad5` completed one real GPT-5.6 ticket generation in 41 seconds without a timeout. The generated bilingual ticket rendered and switched language without another AI request; no prompt, output, credential, cookie, or access code was recorded. A real review was not executed in that smoke test.
 
 For one authorized manual smoke test:
 
